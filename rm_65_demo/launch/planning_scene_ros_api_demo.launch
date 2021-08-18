@@ -1,0 +1,6 @@
+<launch>
+
+  <node name="planning_scene_ros_api_demo" pkg="rm_65_demo" type="planning_scene_ros_api_demo" respawn="false" output="screen">
+  </node>
+
+</launch>

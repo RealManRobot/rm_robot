@@ -1,0 +1,10 @@
+<launch>
+<!-- RM-65 Driver -->
+  <node name="rm_driver" pkg="rm_driver" type="rm_driver" respawn="false" output="screen">
+  </node>
+
+
+<!-- Moveit -->
+  <include file="$(find rm_65_moveit_config)/launch/demo_realrobot.launch">
+  </include>
+</launch>
