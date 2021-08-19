@@ -14,8 +14,8 @@ For the latest features and developments you might want to install from source.<
 4. Make sure to source the correct setup file according to your workspace hierarchy, then use **catkin build** to compile.<br>
 * You should compile `rm_msgs` first before compiling the source code:
 ```  
-        1.catkin build rm_msgs
-		2.catkin build
+catkin build rm_msgs
+catkin build
 ```
 
 ### Contents
@@ -31,10 +31,9 @@ For the latest features and developments you might want to install from source.<
 You can use MoveIt! to control the simulated robot like ***RVIZ*** ,***Gazebo*** or ***VREP*** environment.
 
 **Use MoveIt in RVIZ to control the simulated robot in Gazebo:**
-**CAUTION:<br>
-	Before running, you need to modify rm_65_moveit_config/launch/rm_65_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.**
+* ***CAUTION:*** Before running, you need to modify rm_65_moveit_config/launch/rm_65_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.
 ```  
-        roslaunch rm_gazebo arm_65_bringup_moveit.launch
+roslaunch rm_gazebo arm_65_bringup_moveit.launch
 ```
 
 * Then select `"Interact"` and move the end-effector to a new goal.
