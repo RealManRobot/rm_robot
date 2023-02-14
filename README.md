@@ -1,7 +1,7 @@
 # RealMan Robot
 
 
-* This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic`. 
+* This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
 
 ### Installation from Source
 ---
