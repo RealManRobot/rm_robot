@@ -75,10 +75,10 @@ class MoveItObstaclesDemo:
         # 将三个物体加入场景当中
         table_pose = PoseStamped()
         table_pose.header.frame_id = reference_frame
-        table_pose.pose.position.x = -0.25
+        table_pose.pose.position.x = -0.33
         table_pose.pose.position.y = 0.0
         # table_pose.pose.position.z = table_ground + table_size[2] / 2.0
-        table_pose.pose.position.z = 0.56
+        table_pose.pose.position.z = 0.55
         table_pose.pose.orientation.w = 1.0
         scene.add_box(table_id, table_pose, table_size)
         # rospy.sleep(2)

@@ -57,16 +57,48 @@ find_package(catkin REQUIRED COMPONENTS
  JointPos.msg
  MoveC.msg
  MoveJ.msg
+ MoveJ_P.msg
  MoveL.msg
  Tool_Analog_Output.msg
  Tool_Digital_Output.msg
  Tool_IO_State.msg
  Plan_State.msg
+ ChangeTool_State.msg
+ ChangeTool_Name.msg
+ ChangeWorkFrame_State.msg
+ ChangeWorkFrame_Name.msg
+ Arm_Current_State.msg
+ GetArmState_Command.msg
  Stop.msg
+ Joint_Teach.msg
+ Pos_Teach.msg
+ Ort_Teach.msg
+ Stop_Teach.msg
 Gripper_Set.msg
 Gripper_Pick.msg
 Joint_Enable.msg
 IO_Update.msg
+Turtle_Driver.msg
+Socket_Command.msg
+Start_Multi_Drag_Teach.msg
+Set_Force_Position.msg
+Force_Position_Move_Joint.msg
+Force_Position_Move_Pose.msg
+Force_Position_State.msg
+Six_Force.msg
+Manual_Set_Force_Pose.msg
+CartePos.msg
+Lift_Height.msg
+Lift_Speed.msg
+Joint_Current.msg
+Joint_Step.msg
+ArmState.msg
+Hand_Posture.msg
+Hand_Seq.msg
+Hand_Speed.msg
+Hand_Force.msg
+Hand_Angle.msg
+LiftState.msg
  )
 
 ## Generate services in the 'srv' folder

@@ -15,7 +15,7 @@
   <arg name="load_robot_description" default="true"/>
 
   <!-- Set execution mode for fake execution controllers -->
-  <arg name="execution_type" default="interpolate" />
+  <arg name="fake_execution_type" default="interpolate" />
 
   <!--
   By default, hide joint_state_publisher's GUI
@@ -29,13 +29,12 @@
   <arg name="use_rviz" default="true" />
 
   <!-- If needed, broadcast static tf for robot root -->
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+  <!-- <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <param name="/use_gui" value="$(arg use_gui)"/>
     <rosparam param="/source_list">[/joint_states]</rosparam>
-  </node>
+  </node> -->
 
   <!-- We do not have a robot connected, so publish fake joint states -->
-  <!-- <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam> -->
   <!-- <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" unless="$(arg use_gui)">
     <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
   </node>
@@ -45,15 +44,12 @@
 
   <!-- Given the published joint states, publish tf for the robot links -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
-  <!-- <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen" >
-    <remap from="/joint_states" to="/rm_65/joint_states"/>
-  </node> -->
 
   <!-- Run the main MoveIt! executable without trajectory execution (we do not have controllers configured by default) -->
   <include file="$(find rm_65_moveit_config)/launch/move_group.launch">
     <arg name="allow_trajectory_execution" value="true"/>
     <arg name="fake_execution" value="false"/>
-    <arg name="execution_type" value="$(arg execution_type)"/>
+    <arg name="fake_execution_type" value="$(arg fake_execution_type)"/>
     <arg name="info" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
     <arg name="pipeline" value="$(arg pipeline)"/>

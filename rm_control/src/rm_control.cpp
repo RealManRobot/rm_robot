@@ -20,6 +20,9 @@
 #include <vector>
 #include <algorithm>
 
+#include<std_msgs/Bool.h>
+#include <std_msgs/Empty.h>
+
 using namespace std;
 vector<double> time_from_start_;
 vector<double> p_joint1_;
@@ -66,6 +69,13 @@ double rate = 0.020;    // 5ms
 
 // ros::Publisher joint_pub;         //Simulation robot
 ros::Publisher target_pub;        //Real robot
+ros::Publisher pub_getArmStateTimerSwitch;
+ros::Publisher pub_getArmJoint;
+
+float min_interval = 0.02;  //透传周期,单位:秒
+float wait_move_finish_time = 1.5;  //等待运动到位时间,单位:秒
+int count_keep_send = 0;
+int count_final_joint = 0;
 
 /* 三次样条无参构造 */
 cubicSpline::cubicSpline()
@@ -140,7 +150,16 @@ bool cubicSpline::spline(BoundType type)
     for(int i=0;i<sample_count_;i++)
         b[i]=2;                                //  中间一串数为2
     for(int i=0;i<sample_count_-1;i++)
-        h[i]=x_sample_[i+1]-x_sample_[i];      // 各段步长
+    {
+        if (x_sample_[i+1] == x_sample_[i])
+        {
+            h[i] = 0.005;
+        }
+        else
+        {
+            h[i]=x_sample_[i+1]-x_sample_[i];      // 各段步长
+        }
+    }
     for(int i=1;i<sample_count_-1;i++)
         a[i]=h[i-1]/(h[i-1]+h[i]);
     a[sample_count_-1]=1;
@@ -150,7 +169,16 @@ bool cubicSpline::spline(BoundType type)
         c[i]=h[i]/(h[i-1]+h[i]);
 
     for(int i=0;i<sample_count_-1;i++)
-        f[i]=(y_sample_[i+1]-y_sample_[i])/(x_sample_[i+1]-x_sample_[i]);
+    {
+        if (x_sample_[i+1] == x_sample_[i])
+        {
+            f[i]=(y_sample_[i+1]-y_sample_[i])/0.005;
+        }
+        else
+        {
+            f[i]=(y_sample_[i+1]-y_sample_[i])/(x_sample_[i+1]-x_sample_[i]);
+        }
+    }
 
     for(int i=1;i<sample_count_-1;i++)
         d[i]=6*(f[i]-f[i-1])/(h[i-1]+h[i]);
@@ -254,158 +282,266 @@ void execute(const control_msgs::FollowJointTrajectoryGoalConstPtr& goal, Server
     ROS_INFO("First Move_group give us %d points",point_num);
     point_changed = false;
 
-    /* 各个关节位置 */
-    double p_joint1[point_num];
-    double p_joint2[point_num];
-    double p_joint3[point_num];
-    double p_joint4[point_num];
-    double p_joint5[point_num];
-    double p_joint6[point_num];
+    std_msgs::Bool timerSwitch;
 
-    /* 各个关节速度 */
-    double v_joint1[point_num];
-    double v_joint2[point_num];
-    double v_joint3[point_num];
-    double v_joint4[point_num];
-    double v_joint5[point_num];
-    double v_joint6[point_num];
+    /***********Start gubs 2021/9/16 修复Moveit在同一位姿重复规划执行导致rm_contorl异常停止的Bug***********/
+    if  (point_num > 3) //判断当moveit规划的路点数大于3时为有效规划并进行三次样条插值
+    {
 
-    /* 各个关节加速度 */
-    double a_joint1[point_num];
-    double a_joint2[point_num];
-    double a_joint3[point_num];
-    double a_joint4[point_num];
-    double a_joint5[point_num];
-    double a_joint6[point_num];
+        /* 各个关节位置 */
+        double p_joint1[point_num];
+        double p_joint2[point_num];
+        double p_joint3[point_num];
+        double p_joint4[point_num];
+        double p_joint5[point_num];
+        double p_joint6[point_num];
+
+        /* 各个关节速度 */
+        double v_joint1[point_num];
+        double v_joint2[point_num];
+        double v_joint3[point_num];
+        double v_joint4[point_num];
+        double v_joint5[point_num];
+        double v_joint6[point_num];
+
+        /* 各个关节加速度 */
+        double a_joint1[point_num];
+        double a_joint2[point_num];
+        double a_joint3[point_num];
+        double a_joint4[point_num];
+        double a_joint5[point_num];
+        double a_joint6[point_num];
 
 
-    /* 时间数组 */
-    double time_from_start[point_num];
+        /* 时间数组 */
+        double time_from_start[point_num];
 
-    for (int i = 0; i < point_num; i++) {
-        p_joint1[i] = goal->trajectory.points[i].positions[0];
-        p_joint2[i] = goal->trajectory.points[i].positions[1];
-        p_joint3[i] = goal->trajectory.points[i].positions[2];
-        p_joint4[i] = goal->trajectory.points[i].positions[3];
-        p_joint5[i] = goal->trajectory.points[i].positions[4];
-        p_joint6[i] = goal->trajectory.points[i].positions[5];
+        for (int i = 0; i < point_num; i++) {
+            p_joint1[i] = goal->trajectory.points[i].positions[0];
+            p_joint2[i] = goal->trajectory.points[i].positions[1];
+            p_joint3[i] = goal->trajectory.points[i].positions[2];
+            p_joint4[i] = goal->trajectory.points[i].positions[3];
+            p_joint5[i] = goal->trajectory.points[i].positions[4];
+            p_joint6[i] = goal->trajectory.points[i].positions[5];
 
-        v_joint1[i] = goal->trajectory.points[i].velocities[0];
-        v_joint2[i] = goal->trajectory.points[i].velocities[1];
-        v_joint3[i] = goal->trajectory.points[i].velocities[2];
-        v_joint4[i] = goal->trajectory.points[i].velocities[3];
-        v_joint5[i] = goal->trajectory.points[i].velocities[4];
-        v_joint6[i] = goal->trajectory.points[i].velocities[5];
+            v_joint1[i] = goal->trajectory.points[i].velocities[0];
+            v_joint2[i] = goal->trajectory.points[i].velocities[1];
+            v_joint3[i] = goal->trajectory.points[i].velocities[2];
+            v_joint4[i] = goal->trajectory.points[i].velocities[3];
+            v_joint5[i] = goal->trajectory.points[i].velocities[4];
+            v_joint6[i] = goal->trajectory.points[i].velocities[5];
 
-        a_joint1[i] = goal->trajectory.points[i].accelerations[0];
-        a_joint2[i] = goal->trajectory.points[i].accelerations[1];
-        a_joint3[i] = goal->trajectory.points[i].accelerations[2];
-        a_joint4[i] = goal->trajectory.points[i].accelerations[3];
-        a_joint5[i] = goal->trajectory.points[i].accelerations[4];
-        a_joint6[i] = goal->trajectory.points[i].accelerations[5];
+            a_joint1[i] = goal->trajectory.points[i].accelerations[0];
+            a_joint2[i] = goal->trajectory.points[i].accelerations[1];
+            a_joint3[i] = goal->trajectory.points[i].accelerations[2];
+            a_joint4[i] = goal->trajectory.points[i].accelerations[3];
+            a_joint5[i] = goal->trajectory.points[i].accelerations[4];
+            a_joint6[i] = goal->trajectory.points[i].accelerations[5];
 
-        time_from_start[i] = goal->trajectory.points[i].time_from_start.toSec();
+            time_from_start[i] = goal->trajectory.points[i].time_from_start.toSec();
+        }
+
+        // 实例化样条
+        cubicSpline spline;
+        double max_time = time_from_start[point_num-1];    // 规划时间的最后一个
+        ROS_INFO("Second Move_group max_time is %f ",max_time);
+        time_from_start_.clear();   // 清空
+
+        // joint1
+        if (spline.loadData(time_from_start, p_joint1, point_num, 0, 0, cubicSpline::BoundType_First_Derivative))
+        {
+            p_joint1_.clear();
+            v_joint1_.clear();
+            a_joint1_.clear();
+            x_out = -rate;
+            while(x_out < max_time) {
+                x_out += rate;
+                spline.getYbyX(x_out, y_out);
+                time_from_start_.push_back(x_out);  // 将新的时间存储，只需操作一次即可
+                p_joint1_.push_back(y_out);
+                v_joint1_.push_back(vel);
+                a_joint1_.push_back(acc);
+            }
+
+            // joint2
+            if (spline.loadData(time_from_start, p_joint2, point_num, 0, 0, cubicSpline::BoundType_First_Derivative))
+            {
+
+                p_joint2_.clear();
+                v_joint2_.clear();
+                a_joint2_.clear();
+                x_out = -rate;
+                while(x_out < max_time) {
+                    x_out += rate;
+                    spline.getYbyX(x_out, y_out);
+                    p_joint2_.push_back(y_out);
+                    v_joint2_.push_back(vel);
+                    a_joint2_.push_back(acc);
+                }
+
+                // joint3
+                if (spline.loadData(time_from_start, p_joint3, point_num, 0, 0, cubicSpline::BoundType_First_Derivative))
+                {
+                    p_joint3_.clear();
+                    v_joint3_.clear();
+                    a_joint3_.clear();
+                    x_out = -rate;
+                    while(x_out < max_time) {
+                        x_out += rate;
+                        spline.getYbyX(x_out, y_out);
+                        p_joint3_.push_back(y_out);
+                        v_joint3_.push_back(vel);
+                        a_joint3_.push_back(acc);
+                    }
+
+                    // joint4
+                    if (spline.loadData(time_from_start, p_joint4, point_num, 0, 0, cubicSpline::BoundType_First_Derivative))
+                    {
+                        p_joint4_.clear();
+                        v_joint4_.clear();
+                        a_joint4_.clear();
+                        x_out = -rate;
+                        while(x_out < max_time) {
+                            x_out += rate;
+                            spline.getYbyX(x_out, y_out);
+                            p_joint4_.push_back(y_out);
+                            v_joint4_.push_back(vel);
+                            a_joint4_.push_back(acc);
+                        }
+
+                        // joint5
+                        if (spline.loadData(time_from_start, p_joint5, point_num, 0, 0, cubicSpline::BoundType_First_Derivative))
+                        {
+                            p_joint5_.clear();
+                            v_joint5_.clear();
+                            a_joint5_.clear();
+                            x_out = -rate;
+                            while(x_out < max_time) {
+                                x_out += rate;
+                                spline.getYbyX(x_out, y_out);
+                                p_joint5_.push_back(y_out);
+                                v_joint5_.push_back(vel);
+                                a_joint5_.push_back(acc);
+                            }
+
+                            // joint6
+                            if (spline.loadData(time_from_start, p_joint6, point_num, 0, 0, cubicSpline::BoundType_First_Derivative))
+                            {
+                                p_joint6_.clear();
+                                v_joint6_.clear();
+                                a_joint6_.clear();
+                                x_out = -rate;
+                                while(x_out < max_time) {
+                                    x_out += rate;
+                                    spline.getYbyX(x_out, y_out);
+                                    p_joint6_.push_back(y_out);
+                                    v_joint6_.push_back(vel);
+                                    a_joint6_.push_back(acc);
+                                }
+
+                                //control_msgs::FollowJointTrajectoryFeedback feedback;
+                                //feedback = NULL;
+                                //as->publishFeedback(feedback);
+                                ROS_INFO("Now We get all tarjectory num %d", time_from_start_.size());
+
+                                p2.vector_len = time_from_start_.size();
+                                p2.vector_cnt = 0;
+
+                                timerSwitch.data = true;
+                                pub_getArmStateTimerSwitch.publish(timerSwitch);
+
+                                point_changed = true;
+                                //等待定时器将数据取出并发送完
+                                while(point_changed)
+                                {
+                                    // ros::WallDuration(0.002).sleep();
+                                    if (as->isPreemptRequested() || !ros::ok())
+                                    {
+                                        ROS_INFO("************************Action Server: Preempted");
+                                        point_changed = false;
+                                        as->setPreempted();
+                                        timerSwitch.data = false;
+                                        pub_getArmStateTimerSwitch.publish(timerSwitch);
+                                        return;
+                                    }
+                                }
+                                // ros::WallDuration(2).sleep();
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
     }
+    else if (point_num > 0)
+    {
+        p_joint1_.clear();
+        v_joint1_.clear();
+        a_joint1_.clear();
+        p_joint2_.clear();
+        v_joint2_.clear();
+        a_joint2_.clear();
+        p_joint3_.clear();
+        v_joint3_.clear();
+        a_joint3_.clear();
+        p_joint4_.clear();
+        v_joint4_.clear();
+        a_joint4_.clear();
+        p_joint5_.clear();
+        v_joint5_.clear();
+        a_joint5_.clear();
+        p_joint6_.clear();
+        v_joint6_.clear();
+        a_joint6_.clear();
+        for (int i = 0; i < point_num; i++) {
+            p_joint1_.push_back(goal->trajectory.points[i].positions[0]);
+            v_joint1_.push_back(goal->trajectory.points[i].velocities[0]);
+            a_joint1_.push_back(goal->trajectory.points[i].accelerations[0]);
+            p_joint2_.push_back(goal->trajectory.points[i].positions[1]);
+            v_joint2_.push_back(goal->trajectory.points[i].velocities[1]);
+            a_joint2_.push_back(goal->trajectory.points[i].accelerations[1]);
+            p_joint3_.push_back(goal->trajectory.points[i].positions[2]);
+            v_joint3_.push_back(goal->trajectory.points[i].velocities[2]);
+            a_joint3_.push_back(goal->trajectory.points[i].accelerations[2]);
+            p_joint4_.push_back(goal->trajectory.points[i].positions[3]);
+            v_joint4_.push_back(goal->trajectory.points[i].velocities[3]);
+            a_joint4_.push_back(goal->trajectory.points[i].accelerations[3]);
+            p_joint5_.push_back(goal->trajectory.points[i].positions[4]);
+            v_joint5_.push_back(goal->trajectory.points[i].velocities[4]);
+            a_joint5_.push_back(goal->trajectory.points[i].accelerations[4]);
+            p_joint6_.push_back(goal->trajectory.points[i].positions[5]);
+            v_joint6_.push_back(goal->trajectory.points[i].velocities[5]);
+            a_joint6_.push_back(goal->trajectory.points[i].accelerations[5]);
+        }
 
-    // 实例化样条
-    cubicSpline spline;
-    double max_time = time_from_start[point_num-1];    // 规划时间的最后一个
-    ROS_INFO("Second Move_group max_time is %f ",max_time);
-    time_from_start_.clear();   // 清空
+        p2.vector_len = point_num;
+        p2.vector_cnt = 0;
 
-    // joint1
-    spline.loadData(time_from_start, p_joint1, point_num, 0, 0, cubicSpline::BoundType_First_Derivative);
-    p_joint1_.clear();
-    v_joint1_.clear();
-    a_joint1_.clear();
-    x_out = -rate;
-    while(x_out < max_time) {
-        x_out += rate;
-        spline.getYbyX(x_out, y_out);
-        time_from_start_.push_back(x_out);  // 将新的时间存储，只需操作一次即可
-        p_joint1_.push_back(y_out);
-        v_joint1_.push_back(vel);
-        a_joint1_.push_back(acc);
+        timerSwitch.data = true;
+        pub_getArmStateTimerSwitch.publish(timerSwitch);
+
+        point_changed = true;
+        //等待定时器将数据取出并发送完
+        while(point_changed)
+        {
+            // ros::WallDuration(0.002).sleep();
+            if (as->isPreemptRequested() || !ros::ok())
+           {
+                ROS_INFO("************************Action Server: Preempted");
+                point_changed = false;
+                as->setPreempted();
+                timerSwitch.data = false;
+                pub_getArmStateTimerSwitch.publish(timerSwitch);
+                return;
+            }
+        }
     }
+    /***********End   gubs 2021/9/16 修复Moveit在同一位姿重复规划执行导致rm_contorl异常停止的Bug***********/
 
-    // joint2
-    spline.loadData(time_from_start, p_joint2, point_num, 0, 0, cubicSpline::BoundType_First_Derivative);
-    p_joint2_.clear();
-    v_joint2_.clear();
-    a_joint2_.clear();
-    x_out = -rate;
-    while(x_out < max_time) {
-        x_out += rate;
-        spline.getYbyX(x_out, y_out);
-        p_joint2_.push_back(y_out);
-        v_joint2_.push_back(vel);
-        a_joint2_.push_back(acc);
-    }
-
-    // joint3
-    spline.loadData(time_from_start, p_joint3, point_num, 0, 0, cubicSpline::BoundType_First_Derivative);
-    p_joint3_.clear();
-    v_joint3_.clear();
-    a_joint3_.clear();
-    x_out = -rate;
-    while(x_out < max_time) {
-        x_out += rate;
-        spline.getYbyX(x_out, y_out);
-        p_joint3_.push_back(y_out);
-        v_joint3_.push_back(vel);
-        a_joint3_.push_back(acc);
-    }
-
-    // joint4
-    spline.loadData(time_from_start, p_joint4, point_num, 0, 0, cubicSpline::BoundType_First_Derivative);
-    p_joint4_.clear();
-    v_joint4_.clear();
-    a_joint4_.clear();
-    x_out = -rate;
-    while(x_out < max_time) {
-        x_out += rate;
-        spline.getYbyX(x_out, y_out);
-        p_joint4_.push_back(y_out);
-        v_joint4_.push_back(vel);
-        a_joint4_.push_back(acc);
-    }
-
-    // joint5
-    spline.loadData(time_from_start, p_joint5, point_num, 0, 0, cubicSpline::BoundType_First_Derivative);
-    p_joint5_.clear();
-    v_joint5_.clear();
-    a_joint5_.clear();
-    x_out = -rate;
-    while(x_out < max_time) {
-        x_out += rate;
-        spline.getYbyX(x_out, y_out);
-        p_joint5_.push_back(y_out);
-        v_joint5_.push_back(vel);
-        a_joint5_.push_back(acc);
-    }
-
-    // joint6
-    spline.loadData(time_from_start, p_joint6, point_num, 0, 0, cubicSpline::BoundType_First_Derivative);
-    p_joint6_.clear();
-    v_joint6_.clear();
-    a_joint6_.clear();
-    x_out = -rate;
-    while(x_out < max_time) {
-        x_out += rate;
-        spline.getYbyX(x_out, y_out);
-        p_joint6_.push_back(y_out);
-        v_joint6_.push_back(vel);
-        a_joint6_.push_back(acc);
-    }
-    //control_msgs::FollowJointTrajectoryFeedback feedback;
-    //feedback = NULL;
-    //as->publishFeedback(feedback);
-    ROS_INFO("Now We get all tarjectory num %d", time_from_start_.size());
-
-    p2.vector_len = time_from_start_.size();
-    p2.vector_cnt = 0;
-    point_changed = true;
     as->setSucceeded();
+    timerSwitch.data = false;
+    pub_getArmStateTimerSwitch.publish(timerSwitch);
 
     //发送规划角度，防止真实机械臂连不上
 //    sensor_msgs::JointState joint_state;
@@ -429,13 +565,14 @@ void execute(const control_msgs::FollowJointTrajectoryGoalConstPtr& goal, Server
 
 void timer_callback(const ros::TimerEvent)
 {
+    // ROS_INFO("************timer_callback");
     rm_msgs::JointPos msg;
 
     if(point_changed)
     {
         if(p2.vector_cnt < p2.vector_len)
         {
-            //ROS_INFO("Pos:[%f, %f, %f, %f, %f, %f]",  p_joint1_.at(p2.vector_cnt), p_joint2_.at(p2.vector_cnt), p_joint3_.at(p2.vector_cnt), p_joint4_.at(p2.vector_cnt), p_joint5_.at(p2.vector_cnt), p_joint6_.at(p2.vector_cnt));
+            // ROS_INFO("Pos:[%f, %f, %f, %f, %f, %f]",  p_joint1_.at(p2.vector_cnt), p_joint2_.at(p2.vector_cnt), p_joint3_.at(p2.vector_cnt), p_joint4_.at(p2.vector_cnt), p_joint5_.at(p2.vector_cnt), p_joint6_.at(p2.vector_cnt));
             msg.joint[0] = p_joint1_.at(p2.vector_cnt);
             msg.joint[1] = p_joint2_.at(p2.vector_cnt);
             msg.joint[2] = p_joint3_.at(p2.vector_cnt);
@@ -447,9 +584,37 @@ void timer_callback(const ros::TimerEvent)
         }
         else
         {
-            p2.vector_cnt = 0;
-            p2.vector_len = 0;
-            point_changed = false;
+            if(count_final_joint <= count_keep_send)
+            {
+                // ROS_INFO("************send final joint");
+                msg.joint[0] = p_joint1_.at(p2.vector_cnt-1);
+                msg.joint[1] = p_joint2_.at(p2.vector_cnt-1);
+                msg.joint[2] = p_joint3_.at(p2.vector_cnt-1);
+                msg.joint[3] = p_joint4_.at(p2.vector_cnt-1);
+                msg.joint[4] = p_joint5_.at(p2.vector_cnt-1);
+                msg.joint[5] = p_joint6_.at(p2.vector_cnt-1);
+                target_pub.publish(msg);
+
+                // std_msgs::Empty msg_getArmJoint;
+                // pub_getArmJoint.publish(msg_getArmJoint);
+                count_final_joint++;
+            }
+            else
+            {
+                count_final_joint = 0;
+                p2.vector_cnt = 0;
+                p2.vector_len = 0;
+                point_changed = false;
+            }
+
+            // for(int i=0; i < 20; i++)
+            // {
+            //     target_pub.publish(msg);
+            // }
+
+            // p2.vector_cnt = 0;
+            // p2.vector_len = 0;
+            // point_changed = false;
         }
     }
 }
@@ -461,10 +626,16 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
     ros::Timer State_Timer;
 
-    //timer,5ms
-    State_Timer = nh.createTimer(ros::Duration(0.02), timer_callback);
+    count_final_joint = 0;
+    count_keep_send = wait_move_finish_time / min_interval;
+
+    //timer,20ms
+    State_Timer = nh.createTimer(ros::Duration(min_interval), timer_callback);
     // joint_pub = nh.advertise<sensor_msgs::JointState>("/joint_states", 1);
     target_pub = nh.advertise<rm_msgs::JointPos>("/rm_driver/JointPos", 300);
+    pub_getArmStateTimerSwitch = nh.advertise<std_msgs::Bool>("/rm_driver/GetArmStateTimerSwitch", 200);
+    pub_getArmJoint = nh.advertise<std_msgs::Empty>("/rm_driver/GetArmJoint_Cmd", 100);
+    
     // 定义一个服务器
     Server server(nh, "rm_65/follow_joint_trajectory", boost::bind(&execute, _1, &server), false);
     // 服务器开始运行

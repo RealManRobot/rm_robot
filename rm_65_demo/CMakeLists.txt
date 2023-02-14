@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(rm_65_demo)
 
+find_package(OpenCV REQUIRED)
+
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -23,6 +25,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   tf2_ros
   tf2_geometry_msgs
+  rm_msgs
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
@@ -128,9 +132,12 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
+include 
+ ${catkin_INCLUDE_DIRS}
+ ${Sophus_INCLUDE_DIRS}
+ ${PROJECT_SOURCE_DIR}/include
 )
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -148,6 +155,14 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/rm_65_demo_node.cpp)
 add_executable(planning_scene_ros_api_demo src/planning_scene_ros_api_demo.cpp)
 add_executable(pick_place_demo src/pick_place_demo.cpp)
+add_executable(test_api_movel src/test_api_movel.cpp)
+add_executable(api_moveJ_demo src/api_moveJ_demo.cpp)
+add_executable(api_moveL_demo src/api_moveL_demo.cpp)
+add_executable(api_moveJ_P_demo src/api_moveJ_P_demo.cpp)
+add_executable(api_ChangeToolName_demo src/api_ChangeToolName_demo.cpp)
+add_executable(api_ChangeWorkFrame_demo src/api_ChangeWorkFrame_demo.cpp)
+add_executable(api_Get_Arm_State_demo src/api_Get_Arm_State_demo.cpp)
+add_executable(api_teach_demo src/api_teach_demo.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -165,6 +180,14 @@ add_executable(pick_place_demo src/pick_place_demo.cpp)
 # )
 target_link_libraries(planning_scene_ros_api_demo ${catkin_LIBRARIES})
 target_link_libraries(pick_place_demo ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(test_api_movel ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(api_moveJ_demo ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(api_moveL_demo ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(api_moveJ_P_demo ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(api_ChangeToolName_demo ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(api_ChangeWorkFrame_demo ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(api_Get_Arm_State_demo ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(api_teach_demo ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 #############
 ## Install ##

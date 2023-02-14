@@ -6,6 +6,6 @@ moveit_setup_assistant_config:
   SRDF:
     relative_path: config/rm_65.srdf
   CONFIG:
-    author_name: gbs
+    author_name: gubishan
     author_email: gbs965@outlook.com
-    generated_timestamp: 1628157407
+    generated_timestamp: 1663773994

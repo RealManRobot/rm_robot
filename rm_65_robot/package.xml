@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package>
+  <name>rm_65_robot</name>
+  <version>1.0.0</version>
+  <description>
+	Description,drivers, control, gazebo, msgs, demo, moveit and utilities for RM-65 Robot Arms.
+  </description>
+
+  <author email="gbs965@outlook.com">Bishan Gu</author>
+  <maintainer email="gbs965@outlook.com">Bishan Gu</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <run_depend>rm_msgs</run_depend>
+  <run_depend>rm_bringup</run_depend>
+  <run_depend>rm_control</run_depend>
+  <run_depend>rm_65_description</run_depend>
+  <run_depend>rm_driver</run_depend>
+  <run_depend>rm_gazebo</run_depend>
+  <run_depend>rm_65_moveit_config</run_depend>
+  <run_depend>rm_65_demo</run_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+     <metapackage/>
+  </export>
+</package>
