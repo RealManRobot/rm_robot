@@ -6,8 +6,8 @@
 	Description,drivers, control, gazebo, msgs, demo, moveit and utilities for RM-65 Robot Arms.
   </description>
 
-  <author email="dongqinpeng08@163.com">Dong Qinpeng</author>
-  <maintainer email="dongqinpeng08@163.com">Dong Qinpeng</maintainer>
+  <author email="westley@realman-robot.com">Westley</author>
+  <maintainer email="westley@realman-robot.com">Westley</maintainer>
 
   <license>BSD</license>
 
@@ -19,7 +19,7 @@
   <run_depend>rm_gazebo</run_depend>
   <run_depend>rm_65_moveit_config</run_depend>
   <run_depend>rm_msgs</run_depend>
-    <run_depend>rm_65_demo</run_depend>
+  <run_depend>rm_65_demo</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
