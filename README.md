@@ -73,5 +73,7 @@ roslaunch rm_bringup rm_<arm_type>_robot.launch
 
 * In  `"Motion Planning"` -> `"Plan and Execute"` to send trajectory to the real robot
 
+* More information in rm_doc/doc/睿尔曼机械臂ROS使用说明书V1.7.pdf
+
 **CAUTION:<br>
 	Mistakes made during this verification step can result in dangerous collisions when experiment with using the MoveIt planning environment to 	command trajectories with the real robot. Be certain that an E-stop is close by whenever commanding robot motion.**
