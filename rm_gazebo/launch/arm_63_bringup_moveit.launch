@@ -1,0 +1,18 @@
+<launch>
+  
+    <arg name="rvizconfig" default="$(find rm_gazebo)/config/RML63/rviz_gazebo.rviz"/>
+
+    <!-- Launch Gazebo  -->
+    <include file="$(find rm_gazebo)/launch/RML63/arm_world.launch" />
+
+    <!-- ros_control arm launch file -->
+    <include file="$(find rm_gazebo)/launch/RML63/arm_gazebo_states.launch" />   
+
+    <!-- ros_control trajectory control dof arm launch file -->
+    <include file="$(find rm_gazebo)/launch/RML63/rml_63_trajectory_controller.launch" />
+
+    <!-- moveit launch file -->
+    <include file="$(find rml_63_moveit_config)/launch/moveit_planning_execution.launch" >
+        <arg name="rviz_gazebo_config" value="$(arg rvizconfig)" />
+    </include>
+</launch>
