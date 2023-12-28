@@ -1,6 +1,6 @@
 # RealMan Robot
 
-
+* Version V1.7
 * This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
 
 ### Installation from Source
@@ -33,7 +33,7 @@ source ~/catkin_workspace/devel/setup.bash
 You can use MoveIt! to control the simulated robot like ***RVIZ*** ,***Gazebo*** or ***VREP*** environment.
 
 **Use MoveIt in RVIZ to control the simulated robot in Gazebo:**
-* ***CAUTION:*** Before running, you need to modify rm_65_moveit_config/launch/rm_65_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.
+* ***CAUTION:*** Before running, you need to modify rm_<arm_type>_moveit_config/launch/rm_<arm_type>_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.
 ```  
 roslaunch rm_gazebo arm_65_bringup_moveit.launch
 ```
