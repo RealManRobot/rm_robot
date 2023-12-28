@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: rm_description
+    relative_path: urdf/RM75_6F/rm_75_6f_description.urdf.xacro
+    xacro_args: ""
+  SRDF:
+    relative_path: config/rm_75.srdf
+  CONFIG:
+    author_name: Kaola
+    author_email: Kaola@qq.com
+    generated_timestamp: 1703587577
