@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: rm_description
+    relative_path: urdf/RML63/rml_63_bottom.urdf.xacro
+    xacro_args: ""
+  SRDF:
+    relative_path: config/rml_63_description.srdf
+  CONFIG:
+    author_name: realman
+    author_email: realman@realman.com
+    generated_timestamp: 1669638981

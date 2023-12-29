@@ -1,0 +1,8 @@
+<launch>
+
+	<arg name="Arm_Dof"      default="6"/>               <!-- 机械臂自由度设置 -->
+	<node pkg="rm_control" name="rm_control" type="rm_control" output="screen"> <!--launch-prefix="xterm−e"-->
+		<param name="Arm_Dof"           value="$(arg Arm_Dof)"/>  
+	</node>
+
+</launch>

@@ -1,6 +1,6 @@
 # RealMan Robot
 
-
+* Version V1.7
 * This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
 
 ### Installation from Source
@@ -15,7 +15,9 @@ For the latest features and developments you might want to install from source.<
 * You should compile `rm_msgs` first before compiling the source code:
 ```  
 catkin build rm_msgs
+source ~/catkin_workspace/devel/setup.bash
 catkin build
+source ~/catkin_workspace/devel/setup.bash
 ```
 
 ### Contents
@@ -31,7 +33,7 @@ catkin build
 You can use MoveIt! to control the simulated robot like ***RVIZ*** ,***Gazebo*** or ***VREP*** environment.
 
 **Use MoveIt in RVIZ to control the simulated robot in Gazebo:**
-* ***CAUTION:*** Before running, you need to modify rm_65_moveit_config/launch/rm_65_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.
+* ***CAUTION:*** Before running, you need to modify rm_<arm_type>_moveit_config/launch/rm_<arm_type>_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.
 ```  
 roslaunch rm_gazebo arm_65_bringup_moveit.launch
 ```
@@ -48,7 +50,7 @@ roslaunch rm_gazebo arm_65_bringup_moveit.launch
 +  When you control the RealMan robot, make certain that no one is within the robot workspace and the e-stop is under operator control.
 ```
 **CAUTION:**
-* Before running, you need to modify rm_65_moveit_config/launch/rm_65_moveit_controller_manager.launch.xml and load controllers.yaml.
+* Before running, you need to modify rm_<arm_type>_moveit_config/launch/rm_<arm_type>_moveit_controller_manager.launch.xml and load controllers.yaml.
 * Start the RM robot and ensure that the upper computer and the robot are on the same LAN.
 
 **Use a new terminal for each command.**
@@ -56,17 +58,22 @@ roslaunch rm_gazebo arm_65_bringup_moveit.launch
 * Start the rm_control node, run:
 
 ```
-roslaunch rm_control rm_control.launch
+roslaunch rm_control rm_<arm_type>_control.launch
 ```
+<arm_type> : 65、75、63、eco65
 
 * Start the rm_driver and  MoveIt!, run:
 
 ```
-roslaunch rm_bringup rm_robot.launch
+roslaunch rm_bringup rm_<arm_type>_robot.launch
 ```
+<arm_type> : 65、65_6f、75、75_6f、63、63_6f、eco65、eco65_6f
+
 * Select `"Interact"` in rviz and move the end-effector to a new goal.
 
 * In  `"Motion Planning"` -> `"Plan and Execute"` to send trajectory to the real robot
+
+* More information in rm_doc/doc/睿尔曼机械臂ROS使用说明书V1.7.pdf
 
 **CAUTION:<br>
 	Mistakes made during this verification step can result in dangerous collisions when experiment with using the MoveIt planning environment to 	command trajectories with the real robot. Be certain that an E-stop is close by whenever commanding robot motion.**
