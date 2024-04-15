@@ -291,7 +291,7 @@ char udp_failed_time = 0;
 uint16_t arm_err = 0;                //机械臂错误代码
 uint16_t sys_err = 0;                //系统错误代码
 bool set_gripper_result = false;
-
+bool tcp_arm_joint_state = true;     //Tcp通信是否正常
 /*********************************23.8.9添加变量 Author kaola********************************/
 // 监控ctrl+c的标志位。
 volatile sig_atomic_t ctrl_flag = 0;
@@ -339,12 +339,12 @@ ros::Subscriber sub_setLiftSpeed, sub_lift_setHeight;
 ros::Subscriber sub_setHandPosture, sub_setHandSeq, sub_setHandAngle, sub_setHandSpeed, sub_setHandForce;
 
 // subscriber
-ros::Subscriber MoveJ_Cmd, MoveJ_P_Cmd, MoveL_Cmd, MoveC_Cmd, JointPos_Cmd, Arm_DO_Cmd, Arm_AO_Cmd, Tool_DO_Cmd, Tool_AO_Cmd, Gripper_Cmd, Gripper_Set_Cmd, Emergency_Stop, Joint_En, System_En, IO_Update, Sub_ChangeToolName, Sub_ChangeWorkFrame, Sub_GetArmState, sub_getArmStateTimerSwitch, Sub_StartMultiDragTeach, Sub_StopDragTeach, Sub_SetForcePosition, Sub_StopForcePostion, Sub_StartForcePositionMove, Sub_StopForcePositionMove, Sub_ForcePositionMovePose, Sub_ForcePositionMoveJiont, Sub_ToGetSixForce, Sub_ClearForceData, Sub_SetForceSensor, Sub_ManualSetForcePose, Sub_StopSetForceSensor, Sub_GetArmJoint;
+ros::Subscriber MoveJ_Cmd, MoveJ_P_Cmd, MoveL_Cmd, MoveC_Cmd, JointPos_Cmd, Arm_DO_Cmd, Arm_AO_Cmd, Tool_DO_Cmd, Tool_AO_Cmd, Gripper_Cmd, Gripper_Set_Cmd, Emergency_Stop, Joint_En, System_En, IO_Update, Sub_ChangeToolName, Sub_ChangeWorkFrame, Sub_GetArmState, sub_getArmStateTimerSwitch, Sub_StartMultiDragTeach, Sub_StopDragTeach, Sub_SetForcePosition, Sub_StopForcePosition, Sub_StartForcePositionMove, Sub_StopForcePositionMove, Sub_ForcePositionMovePose, Sub_ForcePositionMoveJiont, Sub_ToGetSixForce, Sub_ClearForceData, Sub_SetForceSensor, Sub_ManualSetForcePose, Sub_StopSetForceSensor, Sub_GetArmJoint;
 ros::Subscriber sub_setGripperPickOn;
 /*************************获取一维力数据*23.9.1添加变量 Author kaola**********/
 ros::Subscriber Sub_ToGetOneForce;
 // publisher
-ros::Publisher Joint_State, Arm_IO_State, Tool_IO_State, Plan_State, ChangeTool_Name, ChangeWorkFrame_Name, ArmCurrentState, pub_Force_Position_State, pub_StartMultiDragTeach_result, pub_StopDragTeach_result, pub_SetForcePosition_result, pub_StopForcePostion_result, pub_ClearForceData_result, pub_ForceSensorSet_result, pub_StopSetForceSensor_result, pub_StartForcePositionMove_result, pub_StopForcePositionMove_result, pub_Force_Position_Move_result, pub_PoseState;
+ros::Publisher Joint_State, Arm_IO_State, Tool_IO_State, Plan_State, ChangeTool_Name, ChangeWorkFrame_Name, ArmCurrentState, pub_Force_Position_State, pub_StartMultiDragTeach_Result, pub_StopDragTeach_Result, pub_SetForcePosition_Result, pub_StopForcePosition_Result, pub_ClearForceData_Result, pub_ForceSensorSet_Result, pub_StopSetForceSensor_Result, pub_StartForcePositionMove_Result, pub_StopForcePositionMove_Result, pub_Force_Position_Move_Result, pub_PoseState;
 ros::Publisher pub_currentJointCurrent;
 ros::Publisher pub_armCurrentState;
 ros::Publisher pub_liftState;
@@ -424,7 +424,7 @@ uint16_t CONTROLLER_VERSION = 0;
 #define GET_SIX_FORCE 0x10
 #define START_MULTI_DRAG_TEACH 0x11
 #define SET_FORCE_POSITION 0x12
-#define STOP_FORCE_POSTION 0x13
+#define STOP_FORCE_POSITION 0x13
 #define CLEAR_FORCE_DATA 0x14
 #define FORCE_SENSOR_SET 0x15
 #define STOP_SET_FORCE_SENSOR 0x16
@@ -526,7 +526,8 @@ int Arm_Socket_Start(void)
         if(errno != EINPROGRESS) //connect返回错误。
 		{
             close(Arm_Socket);
-			ROS_ERROR("connect failed\n");
+			ROS_ERROR("********************Connect faile check your connect!**************\n");
+            return 3;
 		}
         else
         {
@@ -556,7 +557,7 @@ int Arm_Socket_Start(void)
 			{
 				ROS_ERROR("********************Connect faile check your connect!**************\n");
 				close(Arm_Socket);
-				return 3;
+				return 4;
 			}
             /*判断Arm_Socket是否在wset中*/
             if(FD_ISSET(Arm_Socket,&wset))
@@ -572,7 +573,7 @@ int Arm_Socket_Start(void)
 				{
 					ROS_INFO("errno :%d %s\n",errno, strerror(errno));
 					close(Arm_Socket);
-					return 4;
+					return 5;
 				}
  
 				if(err)
@@ -580,7 +581,7 @@ int Arm_Socket_Start(void)
 					ROS_ERROR("********************Connect faile check your connect!**************\n");
 					errno = err;
 					close(Arm_Socket);
-					return 5;
+					return 6;
 				}
 			}
 
@@ -983,6 +984,8 @@ int SetHandAngle(int16_t *hand_angle)
     sprintf(buffer, "%s\r\n", data);
     // res = send(Arm_Socket, buffer, strlen(buffer), 0);
     res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
 
     if (res < 0)
     {
@@ -1014,6 +1017,9 @@ int Set_Joint_Step(uint8_t num, float angle, byte v)
 
     sprintf(buffer, "%s\r\n", data);
     res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+
+    cJSON_Delete(root);
+    free(data);
 
     if (res < 0)
     {
@@ -1275,7 +1281,7 @@ int SendTurtleCtrCmd(std::string message_type, std::string robot_mac_address, fl
 /***** ********************************END****************************************/
 
 //关节空间规划
-int Movej_Cmd(float *joint, byte v)
+int Movej_Cmd(float *joint, byte v, uint8_t trajectory_connect)
 {
     cJSON *root, *array;
     char *data;
@@ -1302,11 +1308,15 @@ int Movej_Cmd(float *joint, byte v)
     cJSON_AddItemToObject(root, "joint", array);
     cJSON_AddNumberToObject(root, "v", v);
     cJSON_AddNumberToObject(root, "r", (int)(r * 1000));
+    cJSON_AddNumberToObject(root, "trajectory_connect", trajectory_connect);
 
     data = cJSON_Print(root);
     sprintf(buffer, "%s\r\n", data);
     // res = send(Arm_Socket, buffer, strlen(buffer), 0);
     res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+
+    cJSON_Delete(root);
+    free(data);
 
     if (res < 0)
     {
@@ -1316,7 +1326,7 @@ int Movej_Cmd(float *joint, byte v)
 }
 
 //笛卡尔空间直线规划
-int Movel_Cmd(POSE pose, byte v)
+int Movel_Cmd(POSE pose, byte v, u_int8_t trajectory_connect)
 {
     cJSON *root, *array;
     char *data;
@@ -1341,6 +1351,7 @@ int Movel_Cmd(POSE pose, byte v)
     cJSON_AddItemToObject(root, "pose", array);
     cJSON_AddNumberToObject(root, "v", v);
     cJSON_AddNumberToObject(root, "r", (int)(r * 1000));
+    cJSON_AddNumberToObject(root, "trajectory_connect", trajectory_connect);
 
     data = cJSON_Print(root);
 
@@ -1358,11 +1369,11 @@ int Movel_Cmd(POSE pose, byte v)
 }
 
 //笛卡尔空间直线规划
-int Movec_Cmd(POSE pose_via, POSE pose_to, byte v, uint16_t loop)
+int Movec_Cmd(POSE pose_via, POSE pose_to, uint16_t v, uint16_t loop, u_int8_t trajectory_connect)
 {
     cJSON *root, *array1, *array2, *pose_json;
     char *data;
-    char buffer[200];
+    char buffer[400];
     int res;
     int r = 0;
     //创建根节点对象
@@ -1397,8 +1408,9 @@ int Movec_Cmd(POSE pose_via, POSE pose_to, byte v, uint16_t loop)
     cJSON_AddStringToObject(root, "command", "movec");
     cJSON_AddItemToObject(root, "pose", pose_json);
     cJSON_AddNumberToObject(root, "v", v);
-    cJSON_AddNumberToObject(root, "r", (int)(r * 1000));
+    cJSON_AddNumberToObject(root, "r", r);
     cJSON_AddNumberToObject(root, "loop", loop);
+    cJSON_AddNumberToObject(root, "trajectory_connect", trajectory_connect);
 
     data = cJSON_Print(root);
 
@@ -1407,7 +1419,7 @@ int Movec_Cmd(POSE pose_via, POSE pose_to, byte v, uint16_t loop)
     res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
     cJSON_Delete(root);
     free(data);
-
+    
     if (res < 0)
     {
         return 1;
@@ -1572,7 +1584,7 @@ int SetStopTeachCmd()
  * *********************************************************************************/
 
 //发送控制机械臂执行MoveJ_P的指令
-int Movej_p_Cmd(POSE pose, byte v)
+int Movej_p_Cmd(POSE pose, byte v, uint8_t trajectory_connect)
 {
     cJSON *root, *array;
     char *data;
@@ -1597,6 +1609,7 @@ int Movej_p_Cmd(POSE pose, byte v)
     cJSON_AddItemToObject(root, "pose", array);
     cJSON_AddNumberToObject(root, "v", v);
     cJSON_AddNumberToObject(root, "r", (int)(r * 1000));
+    cJSON_AddNumberToObject(root, "trajectory_connect", trajectory_connect);
 
     data = cJSON_Print(root);
 
@@ -1675,9 +1688,6 @@ int ChangeWorkFrame_Cmd(std::string WorkFrame_name)
 
     // res = send(Arm_Socket, buffer, strlen(buffer), 0);
     res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
-
-    //    ros::Duration(0.1).sleep();
-    //    mutex.unlock();
 
     cJSON_Delete(root);
     free(data);
@@ -1832,7 +1842,7 @@ int Set_Force_Position_Cmd(byte mode, byte sensor, int N, byte direction)
 }
 
 //结束力位混合控制
-int Stop_Force_Postion_Cmd()
+int Stop_Force_Position_Cmd()
 {
     cJSON *root;
     char *data;
@@ -2007,6 +2017,8 @@ int Force_Position_Move_Jiont_Cmd(byte mode, byte sensor, byte dir, int force, f
     send_mutex.lock();
     res = send(Arm_Socket, buffer, strlen(buffer), 0);
     send_mutex.unlock();
+    cJSON_Delete(root);
+    free(data);
 
     if (res < 0)
     {
@@ -2155,6 +2167,9 @@ int ManualSetForcePose_Cmd(std::string pose, long long *joint)
     sprintf(buffer, "%s\r\n", data);
     // res = send(Arm_Socket, buffer, strlen(buffer), 0);
     res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    
+    cJSON_Delete(root);
+    free(data);
 
     if (res < 0)
     {
@@ -3800,6 +3815,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
     }
     else
     {
+        cJSON_Delete(root);
         return 1;
     }
     /***************************************************************/
@@ -3827,6 +3843,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
     }
     else
     {
+        cJSON_Delete(root);
         return 1;
     }
     /****************************************************************/
@@ -3856,6 +3873,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
     }
     else
     {
+        cJSON_Delete(root);
         return 1;
     }
 
@@ -3891,6 +3909,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
     }
     else
     {
+        cJSON_Delete(root);
         return 1;
     }
     /******************************************************************/
@@ -3919,6 +3938,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
     }
     else
     {
+        cJSON_Delete(root);
         return 1;
     }
     /***********************************************************************/
@@ -3947,6 +3967,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
     }
     else
     {
+        cJSON_Delete(root);
         return 1;
     }
     /***********************************************************************/
@@ -3982,6 +4003,7 @@ result = cJSON_GetObjectItem(root, "waypoint");
     }
     else
     {
+        cJSON_Delete(root);
         return 1;
     }
     /***********************************************************************/
@@ -4010,6 +4032,7 @@ result = cJSON_GetObjectItem(root, "waypoint");
     }
     else
     {
+        cJSON_Delete(root);
         return 1;
     }
     /*************************************************************************/
@@ -4044,6 +4067,7 @@ result = cJSON_GetObjectItem(root, "waypoint");
     }
     else
     {
+        cJSON_Delete(root);
         return 1;
     }
     /*************************************************************************/
@@ -4087,6 +4111,7 @@ if((force_sensor == 1))
         }
         else
         {
+            cJSON_Delete(root);
             return 1;
         }
         /***********************************************************************/
@@ -4122,6 +4147,7 @@ if((force_sensor == 1))
         }
         else
         {
+            cJSON_Delete(root);
             return 1;
         }
         /***********************************************************************/
@@ -4172,6 +4198,7 @@ if((force_sensor == 2))
         
         else
         {
+            cJSON_Delete(root);
             return 1;
         }
     
@@ -4190,6 +4217,7 @@ if((force_sensor == 2))
         }
         else
         {
+            cJSON_Delete(root);
             return 1;
         }
         /***********************************************************************/
@@ -4204,6 +4232,7 @@ if((force_sensor == 2))
         }
         else
         {
+            cJSON_Delete(root);
             return 1;
         }
         /***********************************************************************/
@@ -4823,12 +4852,12 @@ int Parser_Msg(char *msg)
                 if (res == 0)
                 {
                     cJSON_Delete(root);
-                    return STOP_FORCE_POSTION;
+                    return STOP_FORCE_POSITION;
                 }
                 else
                 {
                     cJSON_Delete(root);
-                    ROS_INFO("Parser stop_force_postion failed");
+                    ROS_INFO("Parser stop_force_position failed");
                     return -7;
                 }
             }
@@ -5273,7 +5302,7 @@ int Info_Joint_Err(void)
             ROS_ERROR("Joint %d temperature sensor err!\n", i + 1);
             break;
         case ERR_MASK_TAG_POS:
-            ROS_ERROR("Joint %d target postion over limit err!\n", i + 1);
+            ROS_ERROR("Joint %d target position over limit err!\n", i + 1);
             break;
         case JOINT_CAN_LOSE_ERR:
             ROS_ERROR("Joint %d off-line!\n", i + 1);

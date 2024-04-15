@@ -244,6 +244,7 @@ void MoveJ_Callback(const rm_msgs::MoveJ msg)
 {
     int res = 0;
     int i = 0;
+    u_int8_t trajectory_connect = msg.trajectory_connect;
     byte speed;
     float joint[7];
 
@@ -257,7 +258,7 @@ void MoveJ_Callback(const rm_msgs::MoveJ msg)
         joint[6] = msg.joint[6] * RAD_DEGREE;
     }
 
-    res = Movej_Cmd(joint, speed);
+    res = Movej_Cmd(joint, speed, trajectory_connect);
     joint_flag = true;
     if (res == 0)
     {
@@ -272,40 +273,37 @@ void MoveJ_Callback(const rm_msgs::MoveJ msg)
 void MoveL_Callback(const rm_msgs::MoveL msg)
 {
     int res = 0;
+    u_int8_t trajectory_connect = msg.trajectory_connect;
     byte speed;
     POSE target;
 
     target = Quater_To_Euler(msg.Pose);
     speed = (byte)(msg.speed * 100);
 
-    res = Movel_Cmd(target, speed);
+    res = Movel_Cmd(target, speed, trajectory_connect);
     joint_flag = true;
-    if (res != 0)
+    if (res == 0)
+    {
+        ROS_INFO("MoveL success!\n");
+    }
+    else
     {
         ROS_ERROR("MoveL failed!\n");
     }
-    // if (res == 0)
-    // {
-    //     ROS_INFO("MoveL success!\n");
-    // }
-    // else
-    // {
-    //     ROS_ERROR("MoveL failed!\n");
-    // }
 }
 void MoveC_Callback(const rm_msgs::MoveC msg)
 {
     int res = 0;
-    byte speed;
+    u_int8_t trajectory_connect = msg.trajectory_connect;
+    uint16_t speed;
     POSE target1, target2;
     uint16_t loop;
 
     target1 = Quater_To_Euler(msg.Mid_Pose);
     target2 = Quater_To_Euler(msg.End_Pose);
-    speed = (byte)(msg.speed * 100);
+    speed = (uint16_t)(msg.speed * 100);
     loop = msg.loop;
-
-    res = Movec_Cmd(target1, target2, speed, loop);
+    res = Movec_Cmd(target1, target2, speed, loop, trajectory_connect);
     joint_flag = true;
     if (res == 0)
     {
@@ -407,13 +405,14 @@ void StopTeach_Callback(const rm_msgs::Stop_Teach msg)
 void MoveJ_P_Callback(const rm_msgs::MoveJ_P msg)
 {
     int res = 0;
+    uint8_t trajectory_connect = msg.trajectory_connect;
     byte speed;
     POSE target;
 
     target = Quater_To_Euler(msg.Pose);
     speed = (byte)(msg.speed * 100);
 
-    res = Movej_p_Cmd(target, speed);
+    res = Movej_p_Cmd(target, speed, trajectory_connect);
     joint_flag = true;
     if (res == 0)
     {
@@ -571,10 +570,10 @@ void SetForcePosition_Callback(const rm_msgs::Set_Force_Position msg)
 }
 
 //结束力位混合控制
-void StopForcePostion_Callback(const std_msgs::Empty msg)
+void StopForcePosition_Callback(const std_msgs::Empty msg)
 {
     int res = 0;
-    res = Stop_Force_Postion_Cmd();
+    res = Stop_Force_Position_Cmd();
     if (res == 0)
     {
         ROS_INFO("Stop Force Position success!\n");
@@ -1245,7 +1244,7 @@ bool read_data()
 
     ssize_t numBytes = recvfrom(Udp_Sockfd, udp_socket_buffer, sizeof(udp_socket_buffer), 0,
         (struct sockaddr*) & clientAddr, &clientAddrLen);
-    if (numBytes < 0) {
+    if ((numBytes < 0)||(tcp_arm_joint_state == false)) {
         // std::cerr << "Error in recvfrom" << std::endl;
         close(Udp_Sockfd);
         return false;
@@ -1269,24 +1268,19 @@ bool read_data()
 /*UDP不断发布机械臂当前状态*/
 void udp_timer_callback(const ros::TimerEvent)
 {
-    // while((realtime_arm_joint_state == true)&&(ctrl_flag == 0)&&(set_realtime_push_flag == false))
-    // {
-        if(read_data()==true)
-        {
+    if(read_data()==true)
+    {
         if(Parser_Udp_Msg(udp_socket_buffer)==0);
-        // ROS_INFO("Read_UDP_date IS OK");
-        }
-        else
-        {
+    }
+    else
+    {
         udp_failed_time++;
-        if((udp_failed_time >= 10)&&(realtime_arm_joint_state == true))
+        if(((udp_failed_time >= 10)&&(realtime_arm_joint_state == true))||(tcp_arm_joint_state == false))
         {
-        realtime_arm_joint_state = false;
-        ROS_ERROR("Read_UDP_date IS error");
+            realtime_arm_joint_state = false;
+            ROS_ERROR("Read_UDP_date IS error");
         }
-        }
-    // }
-
+    }
 }
 
 /*心跳包不断查看连通状态*/
@@ -1337,7 +1331,6 @@ void heart_callback(const ros::TimerEvent)
             }
         }
         // 在这里将connect_status更换为1，若未建立连接，程序是不会走到这里的，会一直卡死在上面的while循环里。
-        
         if(CONTROLLER_VERSION == 1)
         {
         State_Timer.start();
@@ -1366,6 +1359,7 @@ void heart_callback(const ros::TimerEvent)
             Udp_State_Timer.start();
         }
         connect_status = 1;
+        tcp_arm_joint_state = true;
     }
 }
 
@@ -1598,7 +1592,7 @@ int main(int argc, char **argv)
     Sub_StartMultiDragTeach = nh_.subscribe("/rm_driver/StartMultiDragTeach_Cmd", 10, StartMultiDragTeach_Callback);
     Sub_StopDragTeach = nh_.subscribe("/rm_driver/StopDragTeach_Cmd", 10, StopDragTeach_Callback);
     Sub_SetForcePosition = nh_.subscribe("/rm_driver/SetForcePosition_Cmd", 10, SetForcePosition_Callback);
-    Sub_StopForcePostion = nh_.subscribe("/rm_driver/StopForcePostion_Cmd", 10, StopForcePostion_Callback);
+    Sub_StopForcePosition = nh_.subscribe("/rm_driver/StopForcePosition_Cmd", 10, StopForcePosition_Callback);
 
     Sub_ToGetSixForce = nh_.subscribe("/rm_driver/GetSixForce_Cmd", 10, GetSixForce_Callback);
     Sub_ClearForceData = nh_.subscribe("/rm_driver/ClearForceData_Cmd", 10, ClearForceData_Callback);
@@ -1647,19 +1641,19 @@ int main(int argc, char **argv)
     spinner_armJog.start();
 
     // publisher
-    pub_StartMultiDragTeach_result = nh_.advertise<std_msgs::Bool>("/rm_driver/StartMultiDragTeach_result", 10);
-    pub_StopDragTeach_result = nh_.advertise<std_msgs::Bool>("/rm_driver/StopDragTeach_result", 10);
-    pub_SetForcePosition_result = nh_.advertise<std_msgs::Bool>("/rm_driver/SetForcePosition_result", 10);
-    pub_StopForcePostion_result = nh_.advertise<std_msgs::Bool>("/rm_driver/StopForcePostion_result", 10);
+    pub_StartMultiDragTeach_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/StartMultiDragTeach_Result", 10);
+    pub_StopDragTeach_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/StopDragTeach_Result", 10);
+    pub_SetForcePosition_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/SetForcePosition_Result", 10);
+    pub_StopForcePosition_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/StopForcePosition_Result", 10);
 
-    pub_ClearForceData_result = nh_.advertise<std_msgs::Bool>("/rm_driver/ClearForceData_result", 10);
-    pub_ForceSensorSet_result = nh_.advertise<std_msgs::Bool>("/rm_driver/ForceSensorSet_result", 10);
-    pub_StopSetForceSensor_result = nh_.advertise<std_msgs::Bool>("/rm_driver/StopSetForceSensor_result", 10);
+    pub_ClearForceData_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/ClearForceData_Result", 10);
+    pub_ForceSensorSet_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/ForceSensorSet_Result", 10);
+    pub_StopSetForceSensor_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/StopSetForceSensor_Result", 10);
 
-    pub_StartForcePositionMove_result = nh_.advertise<std_msgs::Bool>("/rm_driver/StartForcePositionMove_result", 10);
-    pub_StopForcePositionMove_result = nh_.advertise<std_msgs::Bool>("/rm_driver/StopForcePositionMove_result", 10);
+    pub_StartForcePositionMove_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/StartForcePositionMove_Result", 10);
+    pub_StopForcePositionMove_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/StopForcePositionMove_Result", 10);
     pub_Force_Position_State = nh_.advertise<rm_msgs::Force_Position_State>("/rm_driver/Force_Position_State", 10);
-    pub_Force_Position_Move_result = nh_.advertise<std_msgs::Bool>("/rm_driver/Force_Position_Move_result", 10);
+    pub_Force_Position_Move_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Force_Position_Move_Result", 10);
     
     /**************************************END****************************************/
 
@@ -1737,9 +1731,12 @@ int main(int argc, char **argv)
 
     while (ros::ok())
     {
-        while (1)
+        while (realtime_arm_joint_state == true)
         {
-
+            if((udp_failed_time>5)||(tcp_arm_joint_state == false))
+            {
+                break;
+            }
             FD_ZERO(&fds);
             FD_SET(Arm_Socket, &fds);
             nRet = select(Arm_Socket+1, &fds, NULL, NULL, &time_out);
@@ -1756,6 +1753,13 @@ int main(int argc, char **argv)
             if ((temp[0] == 0x0A) && (buffer_cnt > 1))
             {
                 // ROS_INFO("recv data is:  %s", socket_buffer);
+                if(buffer_cnt>500)
+                {
+                    // ROS_INFO("buffer_cnt data is:  %d", buffer_cnt);
+                    tcp_arm_joint_state = false;
+                    buffer_cnt = 0;
+                    break;
+                }
                 msg = (byte)socket_buffer[buffer_cnt - 2];
 
                 if (msg == 0x0D)
@@ -2007,43 +2011,43 @@ int main(int argc, char **argv)
                         break;
                     case START_MULTI_DRAG_TEACH:
                         state.data = RM_Joint.state;
-                        pub_StartMultiDragTeach_result.publish(state);
+                        pub_StartMultiDragTeach_Result.publish(state);
                         break;
                     case STOP_DRAG_TEACH:
                         state.data = RM_Joint.state;
-                        pub_StopDragTeach_result.publish(state);
+                        pub_StopDragTeach_Result.publish(state);
                         break;
                     case SET_FORCE_POSITION:
                         state.data = RM_Joint.state;
-                        pub_SetForcePosition_result.publish(state);
+                        pub_SetForcePosition_Result.publish(state);
                         break;
-                    case STOP_FORCE_POSTION:
+                    case STOP_FORCE_POSITION:
                         state.data = RM_Joint.state;
-                        pub_StopForcePostion_result.publish(state);
+                        pub_StopForcePosition_Result.publish(state);
                         break;
                     case CLEAR_FORCE_DATA:
                         state.data = RM_Joint.state;
-                        pub_ClearForceData_result.publish(state);
+                        pub_ClearForceData_Result.publish(state);
                         break;
                     case FORCE_SENSOR_SET:
                         state.data = RM_Joint.state;
-                        pub_ForceSensorSet_result.publish(state);
+                        pub_ForceSensorSet_Result.publish(state);
                         break;
                     case STOP_SET_FORCE_SENSOR:
                         state.data = RM_Joint.state;
-                        pub_StopSetForceSensor_result.publish(state);
+                        pub_StopSetForceSensor_Result.publish(state);
                         break;
                     case START_FORCE_POSITION_MOVE:
                         state.data = RM_Joint.state;
-                        pub_StartForcePositionMove_result.publish(state);
+                        pub_StartForcePositionMove_Result.publish(state);
                         break;
                     case STOP_FORCE_POSITION_MOVE:
                         state.data = RM_Joint.state;
-                        pub_StopForcePositionMove_result.publish(state);
+                        pub_StopForcePositionMove_Result.publish(state);
                         break;
                     case FORCE_POSITION_MOVE:
                         state.data = RM_Joint.state;
-                        pub_Force_Position_Move_result.publish(state);
+                        pub_Force_Position_Move_Result.publish(state);
                         break;
                     case ARM_CURRENT_JOINT_CURRENT:
                         for (i = 0; i < 6; i++)
