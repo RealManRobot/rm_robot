@@ -27,6 +27,7 @@
 #include <rm_msgs/Arm_Analog_Output.h>
 #include <rm_msgs/Arm_Digital_Output.h>
 #include <rm_msgs/Arm_IO_State.h>
+#include <rm_msgs/Arm_Software_Version.h>
 #include <rm_msgs/Gripper_Pick.h>
 #include <rm_msgs/Gripper_Set.h>
 #include <rm_msgs/Joint_Enable.h>
@@ -262,7 +263,8 @@ typedef struct
     float    work_zero_force[6];       //当前工作坐标系下系统受到的外力数据
     float    tool_zero_force[6];       //当前该工具坐标系下系统受到的外力数据             
     float    joint_zero_force; 
-    std::string   arm_type;            //机械臂的型号信息
+    std::string   product_version;     //机械臂的型号信息
+    std::string   plan_version;     //控制器版本信息
 } JOINT_STATE;
 JOINT_STATE RM_Joint;
 JOINT_STATE Udp_RM_Joint;
@@ -275,7 +277,6 @@ typedef struct
     std::string udp_ip;   
 } UDP_parameter;
 UDP_parameter Udp_Setting;
-// bool set_realtime_push_flag = false;
 /*******************************************节点启动参数***************************************/
 int      arm_dof;                       //关节自由度
 std::string Arm_IP_;                    //机械臂TCP_IP地址
@@ -396,6 +397,7 @@ ros::Publisher pub_Udp_Coordinate;
 // Update:2023-7-25 @HermanYe
 // Get controller version
 ros::Subscriber Sub_Get_Arm_Software_Version;
+ros::Publisher Get_Arm_Software_Version_Result;
 // std::mutex mutex;
 
 // timer
@@ -4340,14 +4342,15 @@ int Parser_Msg(char *msg)
     /***********************************获得机械臂型号****************************************/  
         data = json_state->valuestring;
         std::cout << "Arm type is " << data << std::endl;
-        RM_Joint.arm_type = data;
+        RM_Joint.product_version = data;
     /***********************************获得软件版本型号****************************************/  
         json_state = cJSON_GetObjectItem(root, "Plan_version");
         plan_version = json_state->valueint;
         ss << std::hex << std::setw(2) << std::setfill('0') << (int)plan_version;
-        std::string hex_str = ss.str();
+        // std::string hex_str = 
         // hex_str = toupper(hex_str[1]);
-        strcpy(buffer, hex_str.c_str());
+        RM_Joint.plan_version = ss.str();
+        strcpy(buffer, RM_Joint.plan_version.c_str());
         std::cout << "Arm version is " << buffer << std::endl;
     /**************************************区分六维力版本****************************************/  
         if(buffer[1] == 'b')

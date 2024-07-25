@@ -1,6 +1,6 @@
 # RealMan Robot
 
-* Version V2.0.1
+* Version V2.1.0
 * This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
 
 ### Installation from Source
@@ -60,20 +60,20 @@ roslaunch rm_gazebo arm_<arm_type>_bringup_moveit.launch
 ```
 roslaunch rm_control rm_<arm_type>_control.launch
 ```
-<arm_type> : 65、75、63、eco65
+<arm_type> : 65、75、63、eco65、gen72
 
 * Start the rm_driver and  MoveIt!, run:
 
 ```
 roslaunch rm_bringup rm_<arm_type>_robot.launch
 ```
-<arm_type> : 65、65_6f、75、75_6f、63、63_6f、eco65、eco65_6f
+<arm_type> : 65、65_6f、75、75_6f、63、63_6f、eco65、eco65_6f、gen72
 
 * Select `"Interact"` in rviz and move the end-effector to a new goal.
 
 * In  `"Motion Planning"` -> `"Plan and Execute"` to send trajectory to the real robot
 
-* More information in rm_doc/doc/睿尔曼机械臂ROS使用说明书V1.7.pdf
+* More information in rm_doc/doc/
 
 **CAUTION:<br>
 	Mistakes made during this verification step can result in dangerous collisions when experiment with using the MoveIt planning environment to 	command trajectories with the real robot. Be certain that an E-stop is close by whenever commanding robot motion.**  

@@ -50,10 +50,11 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Generate messages in the 'msg' folder
  add_message_files(
-   FILES
-   Arm_Analog_Output.msg
-   Arm_Digital_Output.msg
-   Arm_Joint_Speed_Max.msg   ##
+  FILES
+  Arm_Analog_Output.msg
+  Arm_Digital_Output.msg
+  Arm_Joint_Speed_Max.msg   ##
+  Arm_Software_Version.msg
  Arm_IO_State.msg
  JointPos.msg
  MoveC.msg

@@ -1006,29 +1006,25 @@ void Gripper_Set_Callback(rm_msgs::Gripper_Set msg)
         }
     }
 }
-void Stop_Callback(const rm_msgs::Stop msg)
+void Stop_Callback(const std_msgs::Empty msg)
 {
 
     int res = 0;
-
-    if (msg.state)
+    res = Move_Stop_Cmd();
+    if (res == 0)
     {
-        res = Move_Stop_Cmd();
-        if (res == 0)
-        {
-            ROS_INFO("Emergency stop success!\n");
-        }
-        else
-        {
-            ROS_ERROR("Emergency stop failed!\n");
-        }
+        ROS_INFO("Emergency stop success!\n");
+    }
+    else
+    {
+        ROS_ERROR("Emergency stop failed!\n");
     }
 }
 
 void Joint_Enable_Callback(const rm_msgs::Joint_Enable msg)
 {
     int res = 0;
-    if ((msg.joint_num > 6) || (msg.joint_num < 1))
+    if ((msg.joint_num > 7) || (msg.joint_num < 1))
     {
         ROS_ERROR("Joint Enable Set Error:Joint num out of range");
         return;
@@ -1403,6 +1399,7 @@ int main(int argc, char **argv)
     rm_msgs::Joint_Current joint_current;
     rm_msgs::ArmState armState;
     rm_msgs::LiftState liftState;
+    rm_msgs::Arm_Software_Version arm_version;
 
     /***********************************UDP控制数据类型*************************************/ 
     rm_msgs::Set_Realtime_Push udp_set_realtime_push;
@@ -1411,7 +1408,7 @@ int main(int argc, char **argv)
     tf2::Quaternion quaternion_tf;
 
     private_nh_.param<std::string>("Arm_IP",               Arm_IP_,                "192.168.1.18");
-    private_nh_.param<std::string>("Arm_Type",             RM_Joint.arm_type,      "RM75");
+    private_nh_.param<std::string>("Arm_Type",             RM_Joint.product_version,      "RM75");
     private_nh_.param<bool>       ("Follow",               canfd_follow,           false);
     private_nh_.param<int>        ("Arm_Port",             Arm_Port_,              8080);
     private_nh_.param<int>        ("Arm_Dof",              arm_dof,                6);
@@ -1437,7 +1434,7 @@ int main(int argc, char **argv)
     }
 
     ROS_INFO("/****************************************************************************\\n");
-    std::cout << "\t\t   Connect " << RM_Joint.arm_type  << " robot! \t\t" << std::endl;
+    std::cout << "\t\t   Connect " << RM_Joint.product_version  << " robot! \t\t" << std::endl;
     ROS_INFO("/****************************************************************************\\n");
     timer_cnt = 0;
 
@@ -1524,7 +1521,7 @@ int main(int argc, char **argv)
     // Update:2023-7-25 @HermanYe
     // Get controller version
     Sub_Get_Arm_Software_Version = nh_.subscribe("/rm_driver/Get_Arm_Software_Version", 10, Get_Arm_Software_Version_Callback);
-
+    Get_Arm_Software_Version_Result = nh_.advertise<rm_msgs::Arm_Software_Version>("/rm_driver/Get_Arm_Software_Version_Result", 1);
     /********************************************udp配置参数修改控制********************************************/
     Set_Realtime_Push = nh_.subscribe("/rm_driver/Set_Realtime_Push", 10, Set_Realtime_Push_callback);
     Set_Realtime_Push_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Realtime_Push_Result", 1);
@@ -1532,12 +1529,10 @@ int main(int argc, char **argv)
     Get_Realtime_Push = nh_.subscribe("/rm_driver/Get_Realtime_Push", 10, Get_Realtime_Push_callback);
     Get_Realtime_Push_Result = nh_.advertise<rm_msgs::Set_Realtime_Push>("/rm_driver/Get_Realtime_Push_Result", 1);
     /********************************************力传感器外力数据********************************************/
-    
     pub_ArmError = nh_.advertise<std_msgs::UInt16>("/rm_driver/ArmError", 100);
     pub_SysError = nh_.advertise<std_msgs::UInt16>("/rm_driver/SysError", 100);
     pub_JointErrorCode = nh_.advertise<rm_msgs::Manual_Set_Force_Pose>("/rm_driver/JointErrorCode", 100);
-
-    /***********************************发布当前的受力基准坐标系*******************************************/
+    /*****************************************发布当前的受力基准坐标系*******************************************/
     pub_Udp_Coordinate = nh_.advertise<std_msgs::UInt16>("/rm_driver/Udp_Coordinate", 1);
 
     sub_getArmStateTimerSwitch = nh_.subscribe("/rm_driver/GetArmStateTimerSwitch", 1, getArmStateTimerSwitch_Callback);
@@ -1781,6 +1776,9 @@ int main(int argc, char **argv)
                         {
                             Udp_Set_Realtime_Push(Udp_cycle_/5, Udp_Port_, Udp_force_coordinate, Udp_IP_);
                         }
+                        arm_version.Product_version = RM_Joint.product_version;
+                        arm_version.Plan_version = RM_Joint.plan_version;
+                        Get_Arm_Software_Version_Result.publish(arm_version);
                         Info_Arm_Err();
                         break;
                     }
@@ -2226,7 +2224,7 @@ int main(int argc, char **argv)
         {State_Timer.start();}
         last_connect_status = 1;
         ROS_INFO("RM_Robot driver lines start!!!\n");
-        ROS_INFO("Connect %s robot!\n",RM_Joint.arm_type.c_str());
+        ROS_INFO("Connect %s robot!\n",RM_Joint.product_version.c_str());
     }
 
     /*

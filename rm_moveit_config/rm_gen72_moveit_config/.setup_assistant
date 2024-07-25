@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: rm_description
+    relative_path: urdf/GEN72/rm_gen72.urdf.xacro
+    xacro_args: ""
+  SRDF:
+    relative_path: config/rm_gen72.srdf
+  CONFIG:
+    author_name: Kaola
+    author_email: 2209099554@qq.com
+    generated_timestamp: 1719901628
