@@ -1,0 +1,6 @@
+<launch>
+
+  <node name="api_Get_Arm_State_demo" pkg="get_arm_state" type="api_Get_Arm_State_demo" respawn="false" output="screen">
+  </node>
+
+</launch>
