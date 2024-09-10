@@ -80,7 +80,7 @@ void addCollisionObjects(moveit::planning_interface::PlanningSceneInterface& pla
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "rm65_pick_place");
+    ros::init(argc, argv, "rml63_pick_place");
     ros::NodeHandle nh;
     ros::AsyncSpinner spin(1);
     spin.start();

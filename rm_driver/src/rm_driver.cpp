@@ -1521,19 +1521,19 @@ int main(int argc, char **argv)
     // Update:2023-7-25 @HermanYe
     // Get controller version
     Sub_Get_Arm_Software_Version = nh_.subscribe("/rm_driver/Get_Arm_Software_Version", 10, Get_Arm_Software_Version_Callback);
-    Get_Arm_Software_Version_Result = nh_.advertise<rm_msgs::Arm_Software_Version>("/rm_driver/Get_Arm_Software_Version_Result", 1);
+    Get_Arm_Software_Version_Result = nh_.advertise<rm_msgs::Arm_Software_Version>("/rm_driver/Get_Arm_Software_Version_Result", 10);
     /********************************************udp配置参数修改控制********************************************/
     Set_Realtime_Push = nh_.subscribe("/rm_driver/Set_Realtime_Push", 10, Set_Realtime_Push_callback);
-    Set_Realtime_Push_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Realtime_Push_Result", 1);
+    Set_Realtime_Push_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Realtime_Push_Result", 10);
     /*******************************************udp配置参数查询控制******************************************/
     Get_Realtime_Push = nh_.subscribe("/rm_driver/Get_Realtime_Push", 10, Get_Realtime_Push_callback);
-    Get_Realtime_Push_Result = nh_.advertise<rm_msgs::Set_Realtime_Push>("/rm_driver/Get_Realtime_Push_Result", 1);
+    Get_Realtime_Push_Result = nh_.advertise<rm_msgs::Set_Realtime_Push>("/rm_driver/Get_Realtime_Push_Result", 10);
     /********************************************力传感器外力数据********************************************/
     pub_ArmError = nh_.advertise<std_msgs::UInt16>("/rm_driver/ArmError", 100);
     pub_SysError = nh_.advertise<std_msgs::UInt16>("/rm_driver/SysError", 100);
     pub_JointErrorCode = nh_.advertise<rm_msgs::Manual_Set_Force_Pose>("/rm_driver/JointErrorCode", 100);
     /*****************************************发布当前的受力基准坐标系*******************************************/
-    pub_Udp_Coordinate = nh_.advertise<std_msgs::UInt16>("/rm_driver/Udp_Coordinate", 1);
+    pub_Udp_Coordinate = nh_.advertise<std_msgs::UInt16>("/rm_driver/Udp_Coordinate", 10);
 
     sub_getArmStateTimerSwitch = nh_.subscribe("/rm_driver/GetArmStateTimerSwitch", 1, getArmStateTimerSwitch_Callback);
 
@@ -1573,8 +1573,8 @@ int main(int argc, char **argv)
     sub_getCurrArmState = nh_.subscribe("/rm_driver/GetCurrentArmState", 10, GetCurrentArmState_Callback);
 
     // publisher
-    ChangeTool_Name = nh_.advertise<rm_msgs::ChangeTool_State>("/rm_driver/ChangeTool_State", 1);
-    ChangeWorkFrame_Name = nh_.advertise<rm_msgs::ChangeWorkFrame_State>("/rm_driver/ChangeWorkFrame_State", 1);
+    ChangeTool_Name = nh_.advertise<rm_msgs::ChangeTool_State>("/rm_driver/ChangeTool_State", 10);
+    ChangeWorkFrame_Name = nh_.advertise<rm_msgs::ChangeWorkFrame_State>("/rm_driver/ChangeWorkFrame_State", 10);
     ArmCurrentState = nh_.advertise<rm_msgs::Arm_Current_State>("/rm_driver/Arm_Current_State", 10);
     pub_armCurrentState = nh_.advertise<rm_msgs::ArmState>("/rm_driver/ArmCurrentState", 10);
 
@@ -1621,10 +1621,10 @@ int main(int argc, char **argv)
     /***** ********************************END****************************************/
     nh_.setCallbackQueue(&queue_armJog);
     /*************************************示教返回**********************************************/
-    pub_setJointTeachResult = nh_.advertise<std_msgs::Bool>("/rm_driver/SetJointTeach_Result", 1);  //角度
-    pub_setPosTeachResult = nh_.advertise<std_msgs::Bool>("/rm_driver/SetPosTeach_Result", 1);      //位置
-    pub_setOrtTeachResult = nh_.advertise<std_msgs::Bool>("/rm_driver/SetOrtTeach_Result", 1);      //姿态
-    pub_setStopResult = nh_.advertise<std_msgs::Bool>("/rm_driver/SetStopTeach_Result", 1);         //停止
+    pub_setJointTeachResult = nh_.advertise<std_msgs::Bool>("/rm_driver/SetJointTeach_Result", 10);  //角度
+    pub_setPosTeachResult = nh_.advertise<std_msgs::Bool>("/rm_driver/SetPosTeach_Result", 10);      //位置
+    pub_setOrtTeachResult = nh_.advertise<std_msgs::Bool>("/rm_driver/SetOrtTeach_Result", 10);      //姿态
+    pub_setStopResult = nh_.advertise<std_msgs::Bool>("/rm_driver/SetStopTeach_Result", 10);         //停止
 
     ros::AsyncSpinner spinner_others(4, &queue_others);
     spinner_others.start();
@@ -1653,39 +1653,39 @@ int main(int argc, char **argv)
     /**************************************END****************************************/
 
     // publisher
-    Joint_State = nh_.advertise<sensor_msgs::JointState>("joint_states", 1);
-    Arm_IO_State = nh_.advertise<rm_msgs::Arm_IO_State>("/rm_driver/Arm_IO_State", 1);
-    Tool_IO_State = nh_.advertise<rm_msgs::Tool_IO_State>("/rm_driver/Tool_IO_State", 1);
-    Plan_State = nh_.advertise<rm_msgs::Plan_State>("/rm_driver/Plan_State", 1);
-    pub_PoseState = nh_.advertise<geometry_msgs::Pose>("/rm_driver/Pose_State", 1);
-    pub_currentJointCurrent = nh_.advertise<rm_msgs::Joint_Current>("/rm_driver/Joint_Current", 1);
-    pub_liftState = nh_.advertise<rm_msgs::LiftState>("/rm_driver/LiftState", 1);
-    pub_setGripperResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Gripper_Result", 1);
+    Joint_State = nh_.advertise<sensor_msgs::JointState>("joint_states", 10);
+    Arm_IO_State = nh_.advertise<rm_msgs::Arm_IO_State>("/rm_driver/Arm_IO_State", 10);
+    Tool_IO_State = nh_.advertise<rm_msgs::Tool_IO_State>("/rm_driver/Tool_IO_State", 10);
+    Plan_State = nh_.advertise<rm_msgs::Plan_State>("/rm_driver/Plan_State", 10);
+    pub_PoseState = nh_.advertise<geometry_msgs::Pose>("/rm_driver/Pose_State", 10);
+    pub_currentJointCurrent = nh_.advertise<rm_msgs::Joint_Current>("/rm_driver/Joint_Current", 10);
+    pub_liftState = nh_.advertise<rm_msgs::LiftState>("/rm_driver/LiftState", 10);
+    pub_setGripperResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Gripper_Result", 10);
     /******************************************************************************************/
-    pub_setLiftSpeedResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Lift_Speed_Result", 1);
+    pub_setLiftSpeedResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Lift_Speed_Result", 10);
     /***************************************灵巧手控制****************************************/
-    pub_setHandPostureResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Posture_Result", 1);
-    pub_setHandSeqResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Seq_Result", 1);
-    pub_setHandHAngleResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Angle_Result", 1);
-    pub_set_HandSpeedResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Speed_Result", 1);
-    pub_setHandForceResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Force_Result", 1);
+    pub_setHandPostureResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Posture_Result", 10);
+    pub_setHandSeqResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Seq_Result", 10);
+    pub_setHandHAngleResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Angle_Result", 10);
+    pub_set_HandSpeedResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Speed_Result", 10);
+    pub_setHandForceResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Force_Result", 10);
     /**************************************机械臂电源控制******************************************/
-    pub_setArmPowerResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Arm_Power_Result", 1);
+    pub_setArmPowerResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Arm_Power_Result", 10);
     /**************************************工具端电源输出返回***************************************/
-    pub_setToolVoltageResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Tool_Voltage_Result", 1);
+    pub_setToolVoltageResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Tool_Voltage_Result", 10);
     /**************************************工具端数字IO输出状态***************************************/
-    pub_setToolDOStateResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Tool_DO_State_Result", 1);
+    pub_setToolDOStateResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Tool_DO_State_Result", 10);
     /**************************************设置IO输出状态****************************************/
-    pub_setDOStateResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_DO_State_Result", 1);
-    pub_setAOStateResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_AO_State_Result", 1);
+    pub_setDOStateResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_DO_State_Result", 10);
+    pub_setAOStateResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_AO_State_Result", 10);
     /**************************************轨迹急停**********************************************/
-    pub_setArmStopResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Arm_Stop_Result", 1);
+    pub_setArmStopResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Arm_Stop_Result", 10);
     /***********************************清除关节错误代码*******************************************/
-    pub_Joint_Clear_Err_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Joint_Clear_Err_Result", 1);
+    pub_Joint_Clear_Err_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Joint_Clear_Err_Result", 10);
     /***************************************使能、失能关节*******************************************/
-    pub_Joint_En_State_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Joint_En_State_Result", 1);
+    pub_Joint_En_State_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Joint_En_State_Result", 10);
     /***************************************清除系统错误代码*******************************************/
-    pub_System_En_State_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/System_En_State_Result", 1);
+    pub_System_En_State_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/System_En_State_Result", 10);
 
     /*************************************六维力数据发布（非UDP）*******************************************/
     pub_GetSixForce = nh_.advertise<rm_msgs::Six_Force>("/rm_driver/GetSixForce", 100);

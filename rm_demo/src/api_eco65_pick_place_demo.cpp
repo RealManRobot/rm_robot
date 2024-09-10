@@ -16,7 +16,7 @@ void addCollisionObjects(moveit::planning_interface::PlanningSceneInterface& pla
 
     // Add the first table where the cube will originally be kept.
     collision_objects[0].id = "table1";
-    collision_objects[0].header.frame_id = "baselink";
+    collision_objects[0].header.frame_id = "base_link";
 
     // 设置物体table1的形状及相关尺寸
     collision_objects[0].primitives.resize(1);
@@ -28,7 +28,7 @@ void addCollisionObjects(moveit::planning_interface::PlanningSceneInterface& pla
 
     // 设置物体table1的位置
     collision_objects[0].primitive_poses.resize(1);
-    collision_objects[0].primitive_poses[0].position.x = 0.45;
+    collision_objects[0].primitive_poses[0].position.x = -0.45;
     collision_objects[0].primitive_poses[0].position.y = 0;
     collision_objects[0].primitive_poses[0].position.z = 0.2;
 
@@ -36,7 +36,7 @@ void addCollisionObjects(moveit::planning_interface::PlanningSceneInterface& pla
 
     // Add the second table where we will be placing the cube.
     collision_objects[1].id = "table2";
-    collision_objects[1].header.frame_id = "baselink";
+    collision_objects[1].header.frame_id = "base_link";
 
     // 设置物体table2的形状及相关尺寸
     collision_objects[1].primitives.resize(1);
@@ -49,14 +49,14 @@ void addCollisionObjects(moveit::planning_interface::PlanningSceneInterface& pla
     // 设置物体table2的位置
     collision_objects[1].primitive_poses.resize(1);
     collision_objects[1].primitive_poses[0].position.x = 0;
-    collision_objects[1].primitive_poses[0].position.y = 0.45;
+    collision_objects[1].primitive_poses[0].position.y = -0.45;
     collision_objects[1].primitive_poses[0].position.z = 0.2;
 
     collision_objects[1].operation = collision_objects[1].ADD;
 
 
     // 创建并配置一个抓取的目标物体
-    collision_objects[2].header.frame_id = "baselink";
+    collision_objects[2].header.frame_id = "base_link";
     collision_objects[2].id = "object";
 
     // 设置目标物体的形状和相关尺寸
@@ -69,7 +69,7 @@ void addCollisionObjects(moveit::planning_interface::PlanningSceneInterface& pla
 
     // 设置目标物体的位置
     collision_objects[2].primitive_poses.resize(1);
-    collision_objects[2].primitive_poses[0].position.x = 0.44;
+    collision_objects[2].primitive_poses[0].position.x = -0.44;
     collision_objects[2].primitive_poses[0].position.y = 0;
     collision_objects[2].primitive_poses[0].position.z = 0.5;
 
@@ -80,7 +80,7 @@ void addCollisionObjects(moveit::planning_interface::PlanningSceneInterface& pla
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "eco65_pick_place");
+    ros::init(argc, argv, "rm65_pick_place");
     ros::NodeHandle nh;
     ros::AsyncSpinner spin(1);
     spin.start();
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
     target_pose1.position.x = 0.406138;
     target_pose1.position.y = 0.00100714;
     target_pose1.position.z = 0.478058;
-    group.setPoseTarget(target_pose1, "Link6");
+    group.setPoseTarget(target_pose1, "link6");
 
     // 进行运动规划，计算机器人移动到目标的运动轨迹，此时只是计算出轨迹，并不会控制机械臂运动
     moveit::planning_interface::MoveGroupInterface::Plan my_plan;
@@ -139,16 +139,16 @@ int main(int argc, char** argv)
 
         //创建一个附加到Link6上的物体
         moveit_msgs::AttachedCollisionObject attached_object;
-        attached_object.link_name = "Link6";
+        attached_object.link_name = "link6";
         /* The header must contain a valid TF frame*/
-        attached_object.object.header.frame_id = "baselink";
+        attached_object.object.header.frame_id = "base_link";
         /* 设置物体ID */
         attached_object.object.id = "object1";
 
         /* 设置目标物体的位置 */
         geometry_msgs::Pose pose;
 //    pose.orientation.w = 1.0;
-        pose.position.x = 0.44;
+        pose.position.x = -0.44;
         pose.position.y = 0;
         pose.position.z = 0.5;
 
@@ -167,7 +167,7 @@ int main(int argc, char** argv)
         attached_object.object.operation = attached_object.object.ADD;
 
         // 因为要将物体连接到机器人的手上以模拟拿起物体所以配置碰撞检查器忽略物体和机器人手之间的碰撞
-        attached_object.touch_links = std::vector<std::string>{"Link6"};
+        attached_object.touch_links = std::vector<std::string>{"link6"};
 
         // 将创建的附加物体应用到场景中
         planning_scene_interface.applyAttachedCollisionObject(attached_object);
@@ -204,7 +204,7 @@ int main(int argc, char** argv)
 //    target_pose2.position.x = -0.00039465;
 //    target_pose2.position.y = 0.394717;
 //    target_pose2.position.z = 0.504879;
-        group.setPoseTarget(target_pose2, "Link6");
+        group.setPoseTarget(target_pose2, "link6");
 
         // 进行运动规划，计算机器人移动到目标的运动轨迹，此时只是计算出轨迹，并不会控制机械臂运动
         moveit::planning_interface::MoveGroupInterface::Plan my_plan2;
@@ -224,7 +224,7 @@ int main(int argc, char** argv)
             collision_objects1.resize(1);
 
             collision_objects1[0].id = "object2";
-            collision_objects1[0].header.frame_id = "baselink";
+            collision_objects1[0].header.frame_id = "base_link";
 
             // 设置物体的形状及相关尺寸
             collision_objects1[0].primitives.resize(1);
@@ -237,7 +237,7 @@ int main(int argc, char** argv)
             // 设置物体位置
             collision_objects1[0].primitive_poses.resize(1);
             collision_objects1[0].primitive_poses[0].position.x = 0;
-            collision_objects1[0].primitive_poses[0].position.y = 0.44;
+            collision_objects1[0].primitive_poses[0].position.y = -0.44;
             collision_objects1[0].primitive_poses[0].position.z = 0.5;
 
             collision_objects1[0].operation = collision_objects1[0].ADD;
@@ -245,9 +245,9 @@ int main(int argc, char** argv)
 
             //创建一个用于解除附加到机械臂Link6的附加物体
             moveit_msgs::AttachedCollisionObject detach_object;
-            detach_object.link_name = "Link6";
+            detach_object.link_name = "link6";
             /* The header must contain a valid TF frame*/
-            detach_object.object.header.frame_id = "baselink";
+            detach_object.object.header.frame_id = "base_link";
             /* The id of the object */
             detach_object.object.id = "object1";
             detach_object.object.operation = attached_object.object.REMOVE;
@@ -275,3 +275,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
