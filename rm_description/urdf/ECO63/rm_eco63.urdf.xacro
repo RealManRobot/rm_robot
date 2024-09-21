@@ -144,8 +144,11 @@
     <limit
       lower="-3.1"
       upper="3.1"
-      effort="0"
+      effort="100"
       velocity="0" />
+      <dynamics
+      damping="50"
+      friction="1" />
   </joint>
   <link
     name="Link2">
@@ -202,8 +205,11 @@
     <limit
       lower="-3.1"
       upper="3.1"
-      effort="0"
-      velocity="0" />
+      effort="100"
+      velocity="1" />
+      <dynamics
+      damping="50"
+      friction="1" />
   </joint>
   <link
     name="Link3">
@@ -260,8 +266,11 @@
     <limit
       lower="-2.95"
       upper="2.76"
-      effort="0"
-      velocity="0" />
+      effort="100"
+      velocity="1" />
+    <dynamics
+      damping="50"
+      friction="1" />
   </joint>
   <link
     name="Link4">
@@ -318,8 +327,11 @@
     <limit
       lower="-2.44"
       upper="2.44"
-      effort="0"
-      velocity="0" />
+      effort="100"
+      velocity="1" />
+    <dynamics
+      damping="50"
+      friction="1" />
   </joint>
   <link
     name="Link5">
@@ -376,8 +388,11 @@
     <limit
       lower="-3.14"
       upper="3.14"
-      effort="0"
-      velocity="0" />
+      effort="100"
+      velocity="1" />
+    <dynamics
+      damping="50"
+      friction="1" />
   </joint>
   <link
     name="Link6">
@@ -388,12 +403,12 @@
       <mass
         value="0.080797" />
       <inertia
-        ixx="2.4449E-05"
-        ixy="-1.2142E-06"
-        ixz="-1.0223E-07"
-        iyy="2.3012E-05"
-        iyz="6.5765E-08"
-        izz="3.661E-05" />
+        ixx="0"
+        ixy="0"
+        ixz="0"
+        iyy="0"
+        iyz="0"
+        izz="0" />
     </inertial>
     <visual>
       <origin
@@ -434,8 +449,11 @@
     <limit
       lower="-6.28"
       upper="6.28"
-      effort="0"
-      velocity="0" />
+      effort="100"
+      velocity="1" />
+    <dynamics
+      damping="50"
+      friction="1" />
   </joint>
     <!-- Transmissions for ROS Control -->
   <xacro:macro name="transmission_block" params="joint_name">

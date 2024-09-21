@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="rviz_gazebo_config" default="$(find rm_gazebo)/config/ECO65/rviz_gazebo.rviz"/>
+  <arg name="rviz_gazebo_config" default="$(find rm_gazebo)/config/ECO63/rviz_gazebo.rviz"/>
 
  # The planning and execution components of MoveIt! configured to 
  # publish the current configuration of the robot (simulated or real)

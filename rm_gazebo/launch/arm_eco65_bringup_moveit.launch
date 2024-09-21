@@ -8,7 +8,7 @@
     <include file="$(find rm_gazebo)/launch/ECO65/rm_eco65_arm_gazebo_states.launch" />   
 
     <!-- ros_control trajectory control dof arm launch file -->
-    <include file="$(find rm_gazebo)/launch/ECO65/rm_eco65_arm_trajectory_controller.launch" />
+    <include file="$(find rm_gazebo)/launch/ECO65/arm_eco65_trajectory_controller.launch" />
 
     <!-- moveit launch file -->
     <include file="$(find rm_eco65_moveit_config)/launch/moveit_planning_execution.launch" >
