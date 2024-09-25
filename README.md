@@ -1,6 +1,6 @@
 # RealMan Robot
 
-* Version V2.1.0
+* Version V2.2.0
 * This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
 
 ### Installation from Source
@@ -67,7 +67,7 @@ roslaunch rm_control rm_<arm_type>_control.launch
 ```
 roslaunch rm_bringup rm_<arm_type>_robot.launch
 ```
-<arm_type> : 65、65_6f、75、75_6f、63、63_6f、eco65、eco65_6f、gen72
+<arm_type> : 65、65_6f、75、75_6f、63、63_6f、eco63、eco65、eco65_6f、gen72
 
 * Select `"Interact"` in rviz and move the end-effector to a new goal.
 
