@@ -145,7 +145,7 @@
       lower="-3.1"
       upper="3.1"
       effort="100"
-      velocity="0" />
+      velocity="1" />
       <dynamics
       damping="50"
       friction="1" />
