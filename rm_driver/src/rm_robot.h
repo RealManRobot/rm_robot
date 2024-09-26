@@ -242,8 +242,8 @@ typedef struct
     uint16_t err_flag[7];              //关节错误代码
     int8_t   Arm_DI[4];
     float    Arm_AI[4];
-    bool     Tool_IO_Mode[2];
-    bool     Tool_IO_State[2];
+    int8_t   Tool_IO_Mode[2];
+    int8_t   Tool_IO_State[2];
     bool     plan_flag;
     bool     changeTool_flag;          //切换工具坐标系
     bool     ChangeWorkFrame_flag;     //切换工作坐标系
