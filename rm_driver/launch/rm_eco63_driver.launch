@@ -10,6 +10,7 @@
     <arg name="Udp_Port"                 default="8089"/>            <!-- 设置udp主动上报端口 -->
     <arg name="Udp_cycle"                default="5"/>               <!-- 设置udp主动上报周期（ms） 最低为5(200Hz)，需要为5的倍数 -->
     <arg name="Udp_force_coordinate"     default="0"/>               <!-- 设置六维力参考坐标系 -->
+    <arg name="Udp_hand"                 default="false"/>           <!-- 设置灵巧手udp主动上报使能 -->
 
     <!-- 启动机械臂底层驱动节点 -->
     <node name="rm_driver" pkg="rm_driver" type="rm_driver" output="screen" respawn="false">
@@ -23,6 +24,7 @@
         <param name="Udp_Port"              value="$(arg Udp_Port)"/>  
         <param name="Udp_cycle"             value="$(arg Udp_cycle)"/>  
         <param name="Udp_force_coordinate"  value="$(arg Udp_force_coordinate)"/>  
+        <param name="Udp_hand"              value="$(arg Udp_hand)"/>
     </node>
 
 </launch>

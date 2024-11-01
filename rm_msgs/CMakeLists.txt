@@ -103,6 +103,7 @@ Hand_Seq.msg
 Hand_Speed.msg
 Hand_Force.msg
 Hand_Angle.msg
+Hand_Status.msg
 LiftState.msg
 Servo_GetAngle.msg
 Servo_Move.msg

@@ -78,6 +78,44 @@ void SetHandSpeed_Callback(const rm_msgs::Hand_Speed msg)
     }
 }
 
+void HandFollowPos_Callback(const rm_msgs::Hand_Angle msg)
+{
+    int res = 0;
+    int i = 0;
+    int16_t hand_angle[6];
+
+    for (i = 0; i < 6; i++)
+    {
+        hand_angle[i] = msg.hand_angle[i];
+    }
+
+    res = SetHandFollowPos(hand_angle);
+
+    if (res != 0)
+    {
+        ROS_ERROR("SetHandAngle failed!\n");
+    }
+}
+
+void HandFollowAngle_Callback(const rm_msgs::Hand_Angle msg)
+{
+    int res = 0;
+    int i = 0;
+    int16_t hand_angle[6];
+
+    for (i = 0; i < 6; i++)
+    {
+        hand_angle[i] = msg.hand_angle[i];
+    }
+
+    res = SetHandFollowAngle(hand_angle);
+
+    if (res != 0)
+    {
+        ROS_ERROR("SetHandAngle failed!\n");
+    }
+}
+
 //订阅对设置灵巧手关节力阈值的主题接收到数据后的处理函数
 void SetHandForce_Callback(const rm_msgs::Hand_Force msg)
 {
@@ -1180,8 +1218,13 @@ void Set_Realtime_Push_callback(const rm_msgs::Set_Realtime_Push msg)
     port = msg.port;
     ip = msg.ip;
     force_coordinate = msg.force_coordinate;
-
-    res = Udp_Set_Realtime_Push(cycle, port, force_coordinate, ip);
+    Udp_Setting.custom_set_data.aloha_state_ = false;
+    Udp_Setting.custom_set_data.arm_current_status_ = false;
+    Udp_Setting.custom_set_data.expand_state_ = false;
+    Udp_Setting.custom_set_data.hand_ = msg.hand_enable;
+    Udp_Setting.custom_set_data.joint_speed_ = false;
+    Udp_Setting.custom_set_data.lift_state_ = false;
+    res = Udp_Set_Realtime_Push(cycle, port, force_coordinate, ip, Udp_Setting.custom_set_data);
     if(res == 0)
     {
         ROS_INFO("Set_Realtime success!\n");
@@ -1416,6 +1459,7 @@ int main(int argc, char **argv)
     private_nh_.param<int>        ("Udp_Port",             Udp_Port_,              8089);
     private_nh_.param<int>        ("Udp_cycle",            Udp_cycle_,             5);
     private_nh_.param<int>        ("Udp_force_coordinate", Udp_force_coordinate,   0);
+    private_nh_.param<bool>       ("Udp_hand",             udp_hand_,              false);
     signal(SIGINT, my_handler); 
 
     while (Arm_Socket_Start())
@@ -1443,6 +1487,12 @@ int main(int argc, char **argv)
     Udp_Setting.udp_force_coordinate = Udp_force_coordinate;
     Udp_Setting.udp_ip = Udp_IP_;
     udp_min_interval = Udp_cycle_ / 1000.0;
+    Udp_Setting.custom_set_data.aloha_state_ = false;
+    Udp_Setting.custom_set_data.arm_current_status_ = false;
+    Udp_Setting.custom_set_data.expand_state_ = false;
+    Udp_Setting.custom_set_data.joint_speed_ = false;
+    Udp_Setting.custom_set_data.lift_state_ = false;
+    Udp_Setting.custom_set_data.hand_ = udp_hand_;
 
     Get_Arm_Software_Version();
     sensor_msgs::JointState real_joint;
@@ -1550,6 +1600,8 @@ int main(int argc, char **argv)
     sub_setHandAngle = nh_.subscribe("/rm_driver/Hand_SetAngle", 10, SetHandAngle_Callback);
     sub_setHandSpeed = nh_.subscribe("/rm_driver/Hand_SetSpeed", 10, SetHandSpeed_Callback);
     sub_setHandForce = nh_.subscribe("/rm_driver/Hand_SetForce", 10, SetHandForce_Callback);
+    sub_setHandFollowAngle = nh_.subscribe("/rm_driver/Hand_FollowAngle", 10, HandFollowAngle_Callback);
+    sub_setHandFollowPos = nh_.subscribe("/rm_driver/Hand_FollowPos", 10, HandFollowPos_Callback);
 
 
     /***** ********************************START***************************************
@@ -1658,6 +1710,7 @@ int main(int argc, char **argv)
     Tool_IO_State = nh_.advertise<rm_msgs::Tool_IO_State>("/rm_driver/Tool_IO_State", 10);
     Plan_State = nh_.advertise<rm_msgs::Plan_State>("/rm_driver/Plan_State", 10);
     pub_PoseState = nh_.advertise<geometry_msgs::Pose>("/rm_driver/Pose_State", 10);
+    pub_HandStatus = nh_.advertise<rm_msgs::Hand_Status>("/rm_driver/Udp_Hand_Status", 1);
     pub_currentJointCurrent = nh_.advertise<rm_msgs::Joint_Current>("/rm_driver/Joint_Current", 10);
     pub_liftState = nh_.advertise<rm_msgs::LiftState>("/rm_driver/LiftState", 10);
     pub_setGripperResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Gripper_Result", 10);
@@ -1669,6 +1722,8 @@ int main(int argc, char **argv)
     pub_setHandHAngleResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Angle_Result", 10);
     pub_set_HandSpeedResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Speed_Result", 10);
     pub_setHandForceResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Force_Result", 10);
+    pub_setHandFollowAngleResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Follow_Angle_Result", 10);
+    pub_setHandFollowPosResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Hand_Follow_Pos_Result", 10);
     /**************************************机械臂电源控制******************************************/
     pub_setArmPowerResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Arm_Power_Result", 10);
     /**************************************工具端电源输出返回***************************************/
@@ -1709,11 +1764,6 @@ int main(int argc, char **argv)
 
     // init gripper
     RM_Joint.gripper_joint = GRIPPER_WIDTH / 2;
-
-
-    // timer
-    // State_Timer = nh_.createTimer(ros::Duration(min_interval), timer_callback, false, false);
-    // Connect success open timer 
     
     Fake_Socket_Heart.start();
 
@@ -1774,7 +1824,7 @@ int main(int argc, char **argv)
                         }
                         else if((CONTROLLER_VERSION == 2) && (connect_udp_flage == false))
                         {
-                            Udp_Set_Realtime_Push(Udp_cycle_/5, Udp_Port_, Udp_force_coordinate, Udp_IP_);
+                            Udp_Set_Realtime_Push(Udp_cycle_/5, Udp_Port_, Udp_force_coordinate, Udp_IP_,Udp_Setting.custom_set_data);
                         }
                         arm_version.Product_version = RM_Joint.product_version;
                         arm_version.Plan_version = RM_Joint.plan_version;
@@ -1787,6 +1837,7 @@ int main(int argc, char **argv)
                         udp_set_realtime_push.port = Udp_Setting.udp_port;
                         udp_set_realtime_push.force_coordinate = Udp_Setting.udp_force_coordinate;
                         udp_set_realtime_push.ip = Udp_Setting.udp_ip;
+                        udp_set_realtime_push.hand_enable = Udp_Setting.custom_set_data.hand_;
                         if(Udp_Port_ != Udp_Setting.udp_port)
                         {
                             Udp_Socket_Close();
@@ -2108,6 +2159,13 @@ int main(int argc, char **argv)
                         state.data = RM_Joint.state;
                         pub_setHandForceResult.publish(state);
                         break;
+                    case HAND_FOLLOW_ANGLE:
+                        state.data = RM_Joint.state;
+                        pub_setHandFollowAngleResult.publish(state);
+                        break;
+                    case HAND_FOLLOW_POS:
+                        state.data = RM_Joint.state;
+                        pub_setHandFollowPosResult.publish(state);
                     case SET_ARM_POWER:
                         state.data = RM_Joint.state;
                         pub_setArmPowerResult.publish(state);
