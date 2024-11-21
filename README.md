@@ -33,10 +33,16 @@ source ~/catkin_workspace/devel/setup.bash
 You can use MoveIt! to control the simulated robot like ***RVIZ*** ,***Gazebo*** or ***VREP*** environment.
 
 **Use MoveIt in RVIZ to control the simulated robot in Gazebo:**
-* ***CAUTION:*** Before running, you need to modify rm_<arm_type>_moveit_config/launch/rm_<arm_type>_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.
+* ***CAUTION:*** Before running, you need to modify rm_<arm_type>_moveit_config/launch/rm_<arm_type>_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.like this pattern
+![2024-11-21_13-43](https://github.com/user-attachments/assets/1358b6ed-c002-4559-9342-829f5811a389)
+
 ```  
 roslaunch rm_gazebo arm_<arm_type>_bringup_moveit.launch
 ```
+If terminal error :`No p gain specified for pid.  Namespace: /arm/gazebo_ros_control/pid_gains`
+you should modify controller_gazebo.yaml
+![image](https://github.com/user-attachments/assets/580cab3a-10a3-4ac4-abae-93d10b102056)
+
 
 * Then select `"Interact"` and move the end-effector to a new goal.
 
