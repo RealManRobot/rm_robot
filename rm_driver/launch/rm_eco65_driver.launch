@@ -11,6 +11,8 @@
     <arg name="Udp_cycle"                default="5"/>               <!-- 设置udp主动上报周期（ms） 最低为5(200Hz)，需要为5的倍数 -->
     <arg name="Udp_force_coordinate"     default="0"/>               <!-- 设置六维力参考坐标系 -->
     <arg name="Udp_hand"                 default="false"/>           <!-- 设置灵巧手udp主动上报使能 -->
+    <arg name="trajectory_mode"          default="0"/>               <!-- 设置高跟随模式下，支持多种模式，0-完全透传模式、1-曲线拟合模式、2-滤波模式-->
+    <arg name="radio"                    default="0"/>               <!-- 设置曲线拟合模式下平滑系数（范围0-100）或者滤波模式下的滤波参数（范围0-1000），数值越大表示平滑效果越好-->
 
     <!-- 启动机械臂底层驱动节点 -->
     <node name="rm_driver" pkg="rm_driver" type="rm_driver" output="screen" respawn="false">
@@ -25,6 +27,8 @@
         <param name="Udp_cycle"             value="$(arg Udp_cycle)"/>  
         <param name="Udp_force_coordinate"  value="$(arg Udp_force_coordinate)"/>  
         <param name="Udp_hand"              value="$(arg Udp_hand)"/>
+        <param name="trajectory_mode"       value="$(arg trajectory_mode)"/>
+        <param name="radio"                 value="$(arg radio)"/>
     </node>
 
 </launch>

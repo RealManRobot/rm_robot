@@ -9,6 +9,6 @@
 
   <!-- loads ros_controllers to the param server -->
   <!-- <rosparam file="$(find rm_gen72_moveit_config)/config/ros_controllers.yaml"/> -->
-  <rosparam file="$(find rm_gen72_moveit_config)/config/controllers_gazebo.yaml"/>
-  <!-- <rosparam file="$(find rm_gen72_moveit_config)/config/controllers.yaml"/> -->
+  <!-- <rosparam file="$(find rm_gen72_moveit_config)/config/controllers_gazebo.yaml"/> -->
+  <rosparam file="$(find rm_gen72_moveit_config)/config/controllers.yaml"/>
 </launch>

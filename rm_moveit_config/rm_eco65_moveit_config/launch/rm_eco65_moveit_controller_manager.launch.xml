@@ -6,5 +6,5 @@
   <!-- loads controller list to the param server -->
   <!-- <rosparam file="$(find rm_eco65_moveit_config)/config/ros_controllers.yaml"/> -->
   <rosparam file="$(find rm_eco65_moveit_config)/config/controllers.yaml"/> 
-  <!-- <rosparam file="$(find rm_eco65_moveit_config)/config/controllers_gazebo.yaml"/>-->
+  <!-- <rosparam file="$(find rm_eco65_moveit_config)/config/controllers_gazebo.yaml"/> -->
 </launch>

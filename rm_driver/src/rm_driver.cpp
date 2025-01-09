@@ -664,7 +664,7 @@ void ForcePositionMovePose_Callback(const rm_msgs::Force_Position_Move_Pose msg)
         {
             if ((msg.dir >= 0) && (msg.dir < 6))
             {
-                res = Force_Position_Move_Pose_Cmd(msg.mode, msg.sensor, msg.dir, msg.force, target);
+                res = Force_Position_Move_Pose_Cmd(msg.mode, msg.sensor, msg.dir, msg.force, canfd_follow, trajectory_mode_, radio_, target);
                 if (res == 0)
                 {
                     ROS_INFO("Force Position Move Pose success!\n");
@@ -689,7 +689,43 @@ void ForcePositionMovePose_Callback(const rm_msgs::Force_Position_Move_Pose msg)
         ROS_ERROR("Force Position Move Pose mode wrong!\n");
     }
 }
-
+//自定义模式位姿透传力位混合补偿
+void ForcePositionMovePoseCustom_Callback(const rm_msgs::Force_Position_Move_Pose_Custom msg)
+{
+    int res = 0;
+    POSE target;
+    target = Quater_To_Euler(msg.Pose);
+    if ((msg.mode >= 0) && (msg.mode < 2))
+    {
+        if ((msg.sensor >= 0) && (msg.sensor < 2))
+        {
+            if ((msg.dir >= 0) && (msg.dir < 6))
+            {
+                res = Force_Position_Move_Pose_Cmd(msg.mode, msg.sensor, msg.dir, msg.force, msg.follow, msg.trajectory_mode, msg.radio, target);
+                if (res == 0)
+                {
+                    ROS_INFO("Force Position Move Pose success!\n");
+                }
+                else
+                {
+                    ROS_ERROR("Force Position Move Pose failed!\n");
+                }
+            }
+            else
+            {
+                ROS_ERROR("Force Position Move Pose dir wrong!\n");
+            }
+        }
+        else
+        {
+            ROS_ERROR("Force Position Move Pose sensor wrong!\n");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Force Position Move Pose mode wrong!\n");
+    }
+}
 //角度透传力位混合补偿
 void ForcePositionMoveJiont_Callback(const rm_msgs::Force_Position_Move_Joint msg)
 {
@@ -849,6 +885,8 @@ void JointPos_Callback(const rm_msgs::JointPos msg)
     int i = 0;
     float joint[7];
     float expand;
+    uint8_t trajectory_mode;
+    uint8_t radio;
 
     for (i = 0; i < 6; i++)
     {
@@ -859,7 +897,43 @@ void JointPos_Callback(const rm_msgs::JointPos msg)
         joint[6] = msg.joint[6] * RAD_DEGREE;
     }
     expand = msg.expand;
-    res = Movej_CANFD(joint,expand);
+    trajectory_mode= trajectory_mode_;
+    radio = radio_;
+    res = Movej_CANFD(joint,expand, canfd_follow, trajectory_mode, radio);
+    joint_flag = true;
+    if (res == 0)
+    {
+        // ROS_INFO("JointPos success!\n");
+    }
+    else
+    {
+        ROS_ERROR("JointPos failed!\n");
+    }
+}
+
+void MoveJ_Fd_Custom_Callback(const rm_msgs::JointPosCustom msg)
+{
+    int res = 0;
+    int i = 0;
+    float joint[7];
+    float expand;
+    bool follow;
+    uint8_t trajectory_mode;
+    uint8_t radio;
+
+    for (i = 0; i < 6; i++)
+    {
+        joint[i] = msg.joint[i] * RAD_DEGREE;
+    }
+    if(arm_dof == 7)
+    {
+        joint[6] = msg.joint[6] * RAD_DEGREE;
+    }
+    expand = msg.expand;
+    follow = msg.follow;
+    trajectory_mode= msg.trajectory_mode;
+    radio = msg.radio;
+    res = Movej_CANFD(joint,expand, follow, trajectory_mode, radio);
     joint_flag = true;
     if (res == 0)
     {
@@ -1046,7 +1120,6 @@ void Gripper_Set_Callback(rm_msgs::Gripper_Set msg)
 }
 void Stop_Callback(const std_msgs::Empty msg)
 {
-
     int res = 0;
     res = Move_Stop_Cmd();
     if (res == 0)
@@ -1191,8 +1264,39 @@ void Movep_Fd_Callback(const rm_msgs::CartePos msg)
     int res = 0;
     byte speed;
     POSE target;
+    bool follow;
+    uint8_t trajectory_mode;
+    uint8_t radio;
     target = Quater_To_Euler(msg.Pose);
-    res = Movep_CANFD(target);
+    follow = canfd_follow;
+    trajectory_mode= trajectory_mode_;
+    radio = radio_;
+    res = Movep_CANFD(target, follow, trajectory_mode, radio);
+    joint_flag = true;
+    if (res == 0)
+    {
+        // ROS_INFO("Movep_Fd success!\n");
+    }
+    else
+    {
+        ROS_ERROR("Movep_Fd failed!\n");
+    }
+}
+
+void Movep_Fd_Custom_Callback(const rm_msgs::CartePosCustom msg)
+{
+    // ROS_INFO("enter Movep_Fd_Callback");
+    int res = 0;
+    byte speed;
+    POSE target;
+    bool follow;
+    uint8_t trajectory_mode;
+    uint8_t radio;
+    target = Quater_To_Euler(msg.Pose);
+    follow = msg.follow;
+    trajectory_mode= msg.trajectory_mode;
+    radio = msg.radio;
+    res = Movep_CANFD(target, follow, trajectory_mode, radio);
     joint_flag = true;
     if (res == 0)
     {
@@ -1218,12 +1322,14 @@ void Set_Realtime_Push_callback(const rm_msgs::Set_Realtime_Push msg)
     port = msg.port;
     ip = msg.ip;
     force_coordinate = msg.force_coordinate;
-    Udp_Setting.custom_set_data.aloha_state_ = false;
-    Udp_Setting.custom_set_data.arm_current_status_ = false;
-    Udp_Setting.custom_set_data.expand_state_ = false;
+    Udp_Setting.custom_set_data.aloha_state_ = msg.aloha_state_enable;
+    Udp_Setting.custom_set_data.arm_current_status_ = msg.arm_current_status_enable;
+    Udp_Setting.custom_set_data.expand_state_ = msg.expand_state_enable;
     Udp_Setting.custom_set_data.hand_ = msg.hand_enable;
-    Udp_Setting.custom_set_data.joint_speed_ = false;
-    Udp_Setting.custom_set_data.lift_state_ = false;
+    Udp_Setting.custom_set_data.joint_acc_ = msg.joint_acc_enable;
+    Udp_Setting.custom_set_data.joint_speed_ = msg.joint_speed_enable;
+    Udp_Setting.custom_set_data.lift_state_ = msg.lift_state_enable;
+    Udp_Setting.custom_set_data.tail_end_ = msg.tail_end_enable;
     res = Udp_Set_Realtime_Push(cycle, port, force_coordinate, ip, Udp_Setting.custom_set_data);
     if(res == 0)
     {
@@ -1275,7 +1381,7 @@ void timer_callback(const ros::TimerEvent)
 
 struct sockaddr_in clientAddr;
 socklen_t clientAddrLen = sizeof(clientAddr);
-char udp_socket_buffer[800];
+char udp_socket_buffer[1200];
 
 bool read_data()
 {
@@ -1460,7 +1566,10 @@ int main(int argc, char **argv)
     private_nh_.param<int>        ("Udp_cycle",            Udp_cycle_,             5);
     private_nh_.param<int>        ("Udp_force_coordinate", Udp_force_coordinate,   0);
     private_nh_.param<bool>       ("Udp_hand",             udp_hand_,              false);
+    private_nh_.param<int>        ("trajectory_mode",      trajectory_mode_,       0);
+    private_nh_.param<int>        ("radio",                radio_,                 0);
     signal(SIGINT, my_handler); 
+    
 
     while (Arm_Socket_Start())
     {
@@ -1495,6 +1604,7 @@ int main(int argc, char **argv)
     Udp_Setting.custom_set_data.hand_ = udp_hand_;
 
     Get_Arm_Software_Version();
+    //ROS_INFO("11111111111111111111111111111111111111111111111111!\n");
     sensor_msgs::JointState real_joint;
     //发送规划角度，仿真真实机械臂连不上
     if(arm_dof == 6)
@@ -1520,6 +1630,11 @@ int main(int argc, char **argv)
         Arm_State.joint.resize(6);
         joint_current.joint_current.resize(6);
         udp_joint_error_code.joint.resize(6);
+        udp_joint_current.joint_current.resize(6);
+        udp_joint_en_flag.joint_en_flag.resize(6);
+        udp_joint_speed.joint_speed.resize(6);
+        udp_joint_temperature.joint_temperature.resize(6);
+        udp_joint_voltage.joint_voltage.resize(6);
     }
     else if(arm_dof == 7)
     {
@@ -1546,8 +1661,12 @@ int main(int argc, char **argv)
         Arm_State.joint.resize(7);
         joint_current.joint_current.resize(7);
         udp_joint_error_code.joint.resize(7);
+        udp_joint_current.joint_current.resize(7);
+        udp_joint_en_flag.joint_en_flag.resize(7);
+        udp_joint_speed.joint_speed.resize(7);
+        udp_joint_temperature.joint_temperature.resize(7);
+        udp_joint_voltage.joint_voltage.resize(7);
     }
-
 
     nh_.setCallbackQueue(&queue_others);
     // subscriber
@@ -1555,6 +1674,7 @@ int main(int argc, char **argv)
     MoveL_Cmd = nh_.subscribe("/rm_driver/MoveL_Cmd", 10, MoveL_Callback);
     MoveC_Cmd = nh_.subscribe("/rm_driver/MoveC_Cmd", 10, MoveC_Callback);
     JointPos_Cmd = nh_.subscribe("/rm_driver/JointPos", 10, JointPos_Callback);
+    MoveJ_Fd_Custom_Cmd = nh_.subscribe("/rm_driver/MoveJ_Fd_Custom_Cmd", 10, MoveJ_Fd_Custom_Callback);
     Arm_DO_Cmd = nh_.subscribe("/rm_driver/Arm_Digital_Output", 10, Arm_DO_Callback);
     Arm_AO_Cmd = nh_.subscribe("/rm_driver/Arm_Analog_Output", 10, Arm_AO_Callback);
     Tool_DO_Cmd = nh_.subscribe("/rm_driver/Tool_Digital_Output", 10, Tool_DO_Callback);
@@ -1588,6 +1708,7 @@ int main(int argc, char **argv)
     sub_getArmStateTimerSwitch = nh_.subscribe("/rm_driver/GetArmStateTimerSwitch", 1, getArmStateTimerSwitch_Callback);
 
     ros::Subscriber MoveP_Fd_Cmd = nh_.subscribe("/rm_driver/MoveP_Fd_Cmd", 10, Movep_Fd_Callback);
+    MoveP_Fd_Custom_Cmd = nh_.subscribe("/rm_driver/MoveP_Fd_Custom_Cmd", 10, Movep_Fd_Custom_Callback);
 
     sub_getCurrJointCurrent = nh_.subscribe("/rm_driver/GetCurrentJointCurrent", 10, GetCurrJointCurrent_Callback);
     sub_setJointStep = nh_.subscribe("/rm_driver/SetJointStep", 10, SetJointStep_Callback);
@@ -1659,6 +1780,7 @@ int main(int argc, char **argv)
     Sub_StartForcePositionMove = nh_.subscribe("/rm_driver/StartForcePositionMove_Cmd", 10, StartForcePositionMove_Callback);
     Sub_StopForcePositionMove = nh_.subscribe("/rm_driver/StopForcePositionMove_Cmd", 10, StopForcePositionMove_Callback);
     Sub_ForcePositionMovePose = nh_.subscribe("/rm_driver/ForcePositionMovePose_Cmd", 10, ForcePositionMovePose_Callback);
+    Sub_ForcePositionMovePoseCustom = nh_.subscribe("/rm_driver/ForcePositionMovePoseCustom_Cmd", 10, ForcePositionMovePoseCustom_Callback);
     Sub_ForcePositionMoveJiont = nh_.subscribe("/rm_driver/ForcePositionMoveJiont_Cmd", 10, ForcePositionMoveJiont_Callback);
 
     /**************************************START***************************************
@@ -1714,6 +1836,15 @@ int main(int argc, char **argv)
     pub_currentJointCurrent = nh_.advertise<rm_msgs::Joint_Current>("/rm_driver/Joint_Current", 10);
     pub_liftState = nh_.advertise<rm_msgs::LiftState>("/rm_driver/LiftState", 10);
     pub_setGripperResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Gripper_Result", 10);
+
+    pub_ArmCurrentStatus = nh_.advertise<rm_msgs::Arm_Current_Status>("/rm_driver/Udp_Arm_Current_status",10);
+    pub_JointCurrent = nh_.advertise<rm_msgs::Joint_Current>("/rm_driver/Udp_Joint_Current",10);
+    pub_JointEnFlag = nh_.advertise<rm_msgs::Joint_En_Flag>("/rm_driver/Udp_Joint_En_Flag",10);
+    pub_JointSpeed = nh_.advertise<rm_msgs::Joint_Speed>("/rm_driver/Udp_Joint_Speed",10);
+    pub_JointTemperature = nh_.advertise<rm_msgs::Joint_Temperature>("/rm_driver/Udp_Joint_Temperature",10);
+    pub_JointVoltage = nh_.advertise<rm_msgs::Joint_Voltage>("/rm_driver/Udp_Joint_Voltage",10);
+    pub_PoseEuler = nh_.advertise<rm_msgs::Joint_PoseEuler>("/rm_driver/Udp_Joint_PoseEuler",10);
+    pub_LiftInPosition = nh_.advertise<rm_msgs::Lift_In_Position>("/rm_driver/Lift_InPosition",10);
     /******************************************************************************************/
     pub_setLiftSpeedResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Lift_Speed_Result", 10);
     /***************************************灵巧手控制****************************************/
@@ -1838,6 +1969,14 @@ int main(int argc, char **argv)
                         udp_set_realtime_push.force_coordinate = Udp_Setting.udp_force_coordinate;
                         udp_set_realtime_push.ip = Udp_Setting.udp_ip;
                         udp_set_realtime_push.hand_enable = Udp_Setting.custom_set_data.hand_;
+                        udp_set_realtime_push.joint_speed_enable = Udp_Setting.custom_set_data.joint_speed_;
+                        udp_set_realtime_push.joint_acc_enable = Udp_Setting.custom_set_data.joint_acc_;
+                        udp_set_realtime_push.tail_end_enable = Udp_Setting.custom_set_data.tail_end_;
+                        udp_set_realtime_push.lift_state_enable = Udp_Setting.custom_set_data.lift_state_;
+                        udp_set_realtime_push.expand_state_enable = Udp_Setting.custom_set_data.expand_state_;
+                        udp_set_realtime_push.arm_current_status_enable = Udp_Setting.custom_set_data.arm_current_status_;
+                        udp_set_realtime_push.aloha_state_enable = Udp_Setting.custom_set_data.aloha_state_;
+
                         if(Udp_Port_ != Udp_Setting.udp_port)
                         {
                             Udp_Socket_Close();
@@ -1872,6 +2011,7 @@ int main(int argc, char **argv)
                             // ROS_INFO("Reveive Joint State: joint[%d].position=%f",  i, real_joint.position[i]);
                         }
                         // real_joint.position[6] = RM_Joint.gripper_joint;
+                        
                         Joint_State.publish(real_joint);
                         // end = std::chrono::system_clock::now();
                         // duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -1926,6 +2066,9 @@ int main(int argc, char **argv)
                         //     Tool_IO.Tool_Analog_Input = RM_Joint.Tool_AI;
                         // }
                         Tool_IO_State.publish(Tool_IO);
+                        break;
+                    case LIFT_IN_POSITION:
+                        pub_LiftInPosition.publish(lift_in_position);
                         break;
                     case PLAN_STATE_TYPE:
                         Plan.state = RM_Joint.plan_flag;

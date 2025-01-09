@@ -117,7 +117,7 @@ int main(int argc, char** argv)
 
     // 进行运动规划，计算机器人移动到目标的运动轨迹，此时只是计算出轨迹，并不会控制机械臂运动
     moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
+    moveit::core::MoveItErrorCode success = group.plan(my_plan);
 
     ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"target_pose1":"FAILED");
 
@@ -182,7 +182,7 @@ int main(int argc, char** argv)
 
         // 进行运动规划，计算机器人移动到目标的运动轨迹，此时只是计算出轨迹，并不会控制机械臂运动
         moveit::planning_interface::MoveGroupInterface::Plan my_plan2;
-        moveit::planning_interface::MoveItErrorCode success2 = group.plan(my_plan2);
+        moveit::core::MoveItErrorCode success2 = group.plan(my_plan2);
 
         ROS_INFO("Visualizing plan 2 (pose goal) %s",success2?"target_pose2":"FAILED");
 
@@ -235,7 +235,7 @@ int main(int argc, char** argv)
             group.setNamedTarget("zero");
             // 进行运动规划，计算机器人移动到目标的运动轨迹，此时只是计算出轨迹，并不会控制机械臂运动
             moveit::planning_interface::MoveGroupInterface::Plan my_plan3;
-            moveit::planning_interface::MoveItErrorCode success3 = group.plan(my_plan3);
+            moveit::core::MoveItErrorCode success3 = group.plan(my_plan3);
 
             ROS_INFO("Visualizing plan 3 (pose goal) %s",success3?"zero":"FAILED");
 

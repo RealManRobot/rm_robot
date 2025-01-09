@@ -1,0 +1,22 @@
+<launch>
+  
+    <arg name="rvizconfig" default="$(find rm_gazebo)/config/RM75/rviz_gazebo.rviz"/>
+
+    <!-- Launch Gazebo  -->
+    <include file="$(find rm_gazebo)/launch/RM75/arm_world.launch" >
+        <arg name="link7_type" value="Link7_6fb" />
+    </include> 
+
+    <!-- ros_control arm launch file -->
+    <include file="$(find rm_gazebo)/launch/RM75/arm_gazebo_states.launch" />   
+
+    <!-- ros_control trajectory control dof arm launch file -->
+    <include file="$(find rm_gazebo)/launch/RM75/arm_75_trajectory_controller.launch" />
+
+    <!-- moveit launch file -->
+    <include file="$(find rm_75_moveit_config)/launch/moveit_planning_execution.launch" >
+        <arg name="rviz_gazebo_config" value="$(arg rvizconfig)" />
+        <arg name="link7_type" value="Link7_6fb" />
+    </include>
+
+</launch>

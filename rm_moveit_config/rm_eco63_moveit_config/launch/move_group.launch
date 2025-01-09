@@ -39,9 +39,11 @@
   -->
 
   <arg name="load_robot_description" default="true" />
+  <arg name="link6_type" default="Link6"/>
   <!-- load URDF, SRDF and joint_limits configuration -->
   <include file="$(find rm_eco63_moveit_config)/launch/planning_context.launch">
     <arg name="load_robot_description" value="$(arg load_robot_description)" />
+    <arg name="link6_type" value="$(arg link6_type)" />
   </include>
 
   <!-- Planning Functionality -->

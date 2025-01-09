@@ -84,7 +84,7 @@ int main(int argc, char** argv)
     ros::Duration(5.0).sleep();
 
     moveit::planning_interface::MoveGroupInterface::Plan mPlan;
-    moveit::planning_interface::MoveItErrorCode planResult;
+    moveit::core::MoveItErrorCode planResult;
 
 
     //获取末端当前位姿

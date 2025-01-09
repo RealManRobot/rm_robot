@@ -108,7 +108,17 @@ LiftState.msg
 Servo_GetAngle.msg
 Servo_Move.msg
 Set_Realtime_Push.msg
- )
+Arm_Current_Status.msg
+Joint_En_Flag.msg
+Joint_PoseEuler.msg
+Joint_Speed.msg
+Joint_Temperature.msg
+Joint_Voltage.msg
+Lift_In_Position.msg
+CartePosCustom.msg
+JointPosCustom.msg
+Force_Position_Move_Pose_Custom.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -163,7 +173,7 @@ catkin_package(
   INCLUDE_DIRS include
   #LIBRARIES rm_msgs
   CATKIN_DEPENDS geometry_msgs rospy std_msgs roscpp
-  DEPENDS system_lib 
+  # DEPENDS system_lib 
 )
 
 ###########

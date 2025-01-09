@@ -1,0 +1,21 @@
+<launch>
+  
+    <arg name="rvizconfig" default="$(find rm_gazebo)/config/ECO63/rviz_gazebo.rviz"/>
+    <!-- Launch Gazebo  -->
+    <include file="$(find rm_gazebo)/launch/ECO63/rm_eco63_arm_world.launch" >
+        <arg name="link6_type" value="Link6_6fb" />
+    </include> 
+
+    <!-- ros_control arm launch file -->
+    <include file="$(find rm_gazebo)/launch/ECO63/rm_eco63_arm_gazebo_states.launch" />   
+
+    <!-- ros_control trajectory control dof arm launch file -->
+    <include file="$(find rm_gazebo)/launch/ECO63/arm_eco63_trajectory_controller.launch" />
+
+    <!-- moveit launch file -->
+    <include file="$(find rm_eco63_moveit_config)/launch/moveit_planning_execution.launch" >
+        <arg name="rviz_gazebo_config" value="$(arg rvizconfig)" />
+        <arg name="link6_type" value="Link6_6fb" />
+    </include>
+
+</launch>
