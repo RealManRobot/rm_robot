@@ -1,6 +1,8 @@
 # RealMan Robot
 
 * Version V2.3.0
+* All projects in this repository only support mechanical arms that have been upgraded to the third-generation controller version for reference use.
+* They are currently suitable for models such as RM65, RM65_6F, RM75, RM75_6F, RML63, RML63_6F, ECO63, ECO65, ECO65_6F, GEN72, etc.
 * This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
 
 ### Installation from Source
