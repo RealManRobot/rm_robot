@@ -1,0 +1,15 @@
+int32 sys_state                 #系统状态
+int32 sys_err                   #系统错误
+int32[] dof_state               #各自由度当前状态
+int32[] dof_err                 #各自由度错误信息
+int32[] pos                     #各自由度当前位置
+int32[] speed                   #各自由度当前速度
+int32[] angle                   #各自由度当前角度
+int32[] current                 #各自由度当前电流
+int32[] normal_force            #自由度触觉三维力的法向力
+int32[] tangential_force        #自由度触觉三维力的切向力
+int32[] tangential_force_dir    #自由度触觉三维力的切向力方向
+uint32[] tsa                    #自由度触觉自接近
+uint32[] tma                    #自由度触觉互接近
+int32[] touch_data              #触觉传感器原始数据
+int32[] force                   #自由度力矩

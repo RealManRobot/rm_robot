@@ -1,0 +1,4 @@
+uint8 controller_RS485_mode
+uint8 tool_RS485_mode
+uint32 baudrate
+uint32 modbus_timeout

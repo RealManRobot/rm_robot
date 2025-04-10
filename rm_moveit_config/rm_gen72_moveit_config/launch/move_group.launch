@@ -39,9 +39,11 @@
   -->
 
   <arg name="load_robot_description" default="true" />
+  <arg name="arm_type" default="false"/>
   <!-- load URDF, SRDF and joint_limits configuration -->
   <include file="$(find rm_gen72_moveit_config)/launch/planning_context.launch">
     <arg name="load_robot_description" value="$(arg load_robot_description)" />
+    <arg name="arm_type" value="$(arg arm_type)" />
   </include>
 
   <!-- Planning Functionality -->

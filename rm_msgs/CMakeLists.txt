@@ -118,6 +118,14 @@ Lift_In_Position.msg
 CartePosCustom.msg
 JointPosCustom.msg
 Force_Position_Move_Pose_Custom.msg
+RS485_Mode.msg
+Set_Modbus_Mode.msg
+Register_Data.msg
+Read_Register.msg
+Err.msg
+Rm_Plus_Base.msg
+Rm_Plus_State.msg
+Write_Register.msg
 )
 
 ## Generate services in the 'srv' folder

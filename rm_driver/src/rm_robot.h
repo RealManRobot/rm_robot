@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string.h>
+#include <vector>
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -113,6 +114,18 @@
 #include <rm_msgs/CartePosCustom.h>
 #include <rm_msgs/JointPosCustom.h>
 #include <rm_msgs/Force_Position_Move_Pose_Custom.h>
+/***** ***************2025.01.08 添加对modbus的设置和协议适配***********************/
+#include "std_msgs/UInt32.h"
+#include "std_msgs/UInt8.h"
+#include <rm_msgs/RS485_Mode.h>
+#include <rm_msgs/Set_Modbus_Mode.h>
+#include <rm_msgs/Register_Data.h>
+#include <rm_msgs/Read_Register.h>
+#include <rm_msgs/Write_Register.h>
+#include <rm_msgs/Err.h>
+#include <rm_msgs/Rm_Plus_Base.h>
+#include <rm_msgs/Rm_Plus_State.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -242,8 +255,7 @@ typedef struct
 {
     int32_t Pose[6];  //位姿
     int32_t joint[7]; //关节角度
-    uint16_t arm_err; //机械臂错误代码
-    uint16_t sys_err; //控制器错误代码
+    std::vector<uint16_t> error;  //机械臂报错
 } ARM_STATE;
 ARM_STATE Arm_Current_State;
 
@@ -256,6 +268,26 @@ typedef struct {
     uint16_t hand_pos[6];
 } HandData;
 HandData Udp_Hand_Data;
+
+// 定义一个结构体以保存末端设备实时信息数据
+// typedef struct {
+//     int hand_err;
+//     uint16_t hand_force[6];
+//     uint16_t hand_angle[6];
+//     uint16_t hand_state[6];
+//     uint16_t hand_pos[6];
+// } HandData;
+// HandData Udp_Hand_Data;
+
+// // 定义一个结构体以保存手部数据
+// typedef struct {
+//     int hand_err;
+//     uint16_t hand_force[6];
+//     uint16_t hand_angle[6];
+//     uint16_t hand_state[6];
+//     uint16_t hand_pos[6];
+// } HandData;
+// HandData Udp_Hand_Data;
 
 //机械臂状态参数
 typedef struct
@@ -286,6 +318,7 @@ typedef struct
     float    work_zero_force[6];       //当前工作坐标系下系统受到的外力数据
     float    tool_zero_force[6];       //当前该工具坐标系下系统受到的外力数据             
     float    joint_zero_force; 
+    uint32_t mode_result;              //模式查询结果
     std::string   product_version;     //机械臂的型号信息
     std::string   plan_version;        //控制器版本信息
     std::string   arm_current_status;  //机械臂的当前状态
@@ -303,6 +336,8 @@ typedef struct
     bool arm_current_status_;               //机械臂当前状态
     bool aloha_state_;                      //aloha主臂状态
     bool hand_;                             //灵巧手状态显示
+    bool rm_plus_state_;                    //末端设备实时信息
+    bool rm_plus_base_;                     //末端设备实时信息
 } custom_set;
 /****************************************************************************************/
 /******************************udp端口情况变量**23.8.9*Author kaola************************/
@@ -325,13 +360,16 @@ int Udp_cycle_;                         //机械臂UDP上报频率
 int Udp_force_coordinate;               //机械臂六维力参考坐标系
 bool canfd_follow = false;              //透传跟随方式
 bool udp_hand_ = false;                 //灵巧手使能状态
-int trajectory_mode_;               //高跟随模式选择
-int radio_;                          //平滑系数
+bool udp_plus_state_ = false;           //末端设备实时信息
+bool udp_plus_base_ = false;           //末端设备基础信息
+int trajectory_mode_;                   //高跟随模式选择
+int radio_;                             //平滑系数
 /*******************************udp赋值变量*23.8.4*Author kaola********************************/
 bool realtime_arm_joint_state = true;
 char udp_failed_time = 0;
 uint16_t arm_err = 0;                //机械臂错误代码
 uint16_t sys_err = 0;                //系统错误代码
+std::vector<uint16_t> udp_err;     //机械臂\系统错误代码
 bool set_gripper_result = false;
 bool tcp_arm_joint_state = true;     //Tcp通信是否正常
 /*********************************23.8.9添加变量 Author kaola********************************/
@@ -346,12 +384,15 @@ geometry_msgs::Pose udp_arm_pose;
 rm_msgs::Six_Force Udp_Six_Force;
 rm_msgs::Six_Force Udp_Six_Zero_Force;
 rm_msgs::Gripper_Set arm_joint_error;
-std_msgs::UInt16 udp_arm_error;
+rm_msgs::Err udp_error;
 std_msgs::UInt16 udp_sys_error;
+std_msgs::UInt16 udp_arm_error;
 std_msgs::UInt16 udp_coordinate;
 rm_msgs::Manual_Set_Force_Pose udp_joint_error_code;
 sensor_msgs::JointState udp_real_joint;
 rm_msgs::Hand_Status udp_hand_status;
+rm_msgs::Rm_Plus_Base udp_plus_base;
+rm_msgs::Rm_Plus_State udp_plus_state;
 /*******************************************************************************************************/
 
 /*******************************************************************************************************/
@@ -366,6 +407,24 @@ rm_msgs::Joint_PoseEuler udp_joint_poseEuler;
 rm_msgs::Lift_In_Position lift_in_position;
 /*******************************************************************************************************/
 
+
+/*********************************Modbus数据变量 ***************************************************************/
+typedef struct{
+    std_msgs::Bool state;
+    rm_msgs::RS485_Mode get_controller_RS485_mode;
+    rm_msgs::RS485_Mode get_tool_RS485_mode;
+
+    rm_msgs::Register_Data read_coils;
+    rm_msgs::Register_Data read_multiple_coils; //
+    rm_msgs::Register_Data read_input_status;
+    rm_msgs::Register_Data read_holding_registers;
+    rm_msgs::Register_Data read_multiple_holding_registers; //
+    rm_msgs::Register_Data read_input_registers;
+    rm_msgs::Register_Data read_multiple_input_registers; //
+}Modbus_Data;
+Modbus_Data modbus_data;
+
+/*******************************************************************************************************/
 
 geometry_msgs::Pose arm_pose;
 
@@ -401,14 +460,19 @@ ros::Subscriber MoveJ_Fd_Custom_Cmd, MoveP_Fd_Custom_Cmd, Sub_ForcePositionMoveP
 /*************************获取一维力数据*23.9.1添加变量 Author kaola**********/
 ros::Subscriber Sub_ToGetOneForce;
 // publisher
-ros::Publisher Joint_State, Arm_IO_State, Tool_IO_State, Plan_State, ChangeTool_Name, ChangeWorkFrame_Name, ArmCurrentState, pub_Force_Position_State, pub_StartMultiDragTeach_Result, pub_StopDragTeach_Result, pub_SetForcePosition_Result, pub_StopForcePosition_Result, pub_ClearForceData_Result, pub_ForceSensorSet_Result, pub_StopSetForceSensor_Result, pub_StartForcePositionMove_Result, pub_StopForcePositionMove_Result, pub_Force_Position_Move_Result, pub_PoseState, pub_HandStatus, pub_JointCurrent, pub_JointEnFlag, pub_JointSpeed, pub_JointTemperature, pub_JointVoltage, pub_ArmCurrentStatus, pub_PoseEuler, pub_LiftInPosition;
+ros::Publisher Joint_State, Arm_IO_State, Tool_IO_State, Plan_State, ChangeTool_Name, ChangeWorkFrame_Name, ArmCurrentState, pub_Force_Position_State, pub_StartMultiDragTeach_Result, pub_StopDragTeach_Result, pub_SetForcePosition_Result, pub_StopForcePosition_Result, pub_ClearForceData_Result, pub_ForceSensorSet_Result, pub_StopSetForceSensor_Result, pub_StartForcePositionMove_Result, pub_StopForcePositionMove_Result, pub_Force_Position_Move_Result, pub_PoseState, pub_HandStatus, pub_RmPlusState, pub_RmPlusBase, pub_JointCurrent, pub_JointEnFlag, pub_JointSpeed, pub_JointTemperature, pub_JointVoltage, pub_ArmCurrentStatus, pub_PoseEuler, pub_LiftInPosition;
 ros::Publisher pub_currentJointCurrent;
 ros::Publisher pub_armCurrentState;
 ros::Publisher pub_liftState;
 ros::Publisher pub_setGripperResult;
+/***************************modbus协议适配 2025.01.08 Author Fan*********************************/
+ros::Subscriber sub_setRS485, sub_getControllerRS485Mode, sub_getToolRS485Mode, sub_setModbusMode, sub_closeModbusMode, sub_setModbustcpMode, sub_closeModbustcpMode;
+ros::Subscriber sub_readCoils, sub_readMultipleCoils, sub_writeSingleCoil, sub_writeCoils, sub_readInputStatus, sub_readHoldingRegisters, sub_writeSingleRegister, sub_writeRegisters, sub_readMultipleHoldingRegisters, sub_readInputRegisters, sub_readMultipleInputRegisters;
 
+ros::Publisher pub_getControllerRS485Mode_result, pub_getToolRS485Mode_result, pub_setModbusMode_result, pub_closeModbusMode_result, pub_setModbustcpMode_result, pub_closeModbustcpMode_result;
+ros::Publisher pub_readCoils_result, pub_readMultipleCoils_result, pub_writeSingleCoil_result, pub_writeCoils_result, pub_readInputStatus_result, pub_readHoldingRegisters_result, pub_writeSingleRegister_result, pub_writeRegisters_result,  pub_readMultipleHoldingRegisters_result, pub_readInputRegisters_result, pub_readMultipleInputRegisters_result;
 /*************************当前机械臂报错、系统报错、关节报错话题*23.8.9添加变量 Author kaola**********/
-ros::Publisher pub_ArmError, pub_SysError, pub_JointErrorCode;
+ros::Publisher pub_ArmError, pub_SysError, pub_JointErrorCode, pub_UdpError;
 /*************************当前力传感器系统外受力数据0.001N或0.001Nm*23.8.9添加变量 Author kaola**********/
 /*************************原始力数据、系统受到的外力、工作坐标系下、工具坐标系下****************************/
 ros::Publisher pub_GetSixForce, pub_SixZeroForce, pub_Work_Zero_Force, pub_Tool_Zero_Force;     
@@ -456,6 +520,19 @@ ros::Publisher pub_Udp_Coordinate;
 // Get controller version
 ros::Subscriber Sub_Get_Arm_Software_Version;
 ros::Publisher Get_Arm_Software_Version_Result;
+
+/***********************************设置末端生态协议模式***********************************/
+ros::Subscriber sub_setRmPlusMode;
+ros::Publisher pub_setRmPlusModeResult;
+/**********************************查询末端生态协议模式************************************/
+ros::Subscriber sub_getRmPlusMode;
+ros::Publisher pub_getRmPlusModeResult;
+/***********************************设置触觉传感器模式***********************************/
+ros::Subscriber sub_setRmPlusTouch;
+ros::Publisher pub_setRmPlusTouchResult;
+/**********************************查询触觉传感器模式************************************/
+ros::Subscriber sub_getRmPlusTouch;
+ros::Publisher pub_getRmPlusTouchResult;
 // std::mutex mutex;
 
 // timer
@@ -531,6 +608,30 @@ uint16_t CONTROLLER_VERSION = 0;
 #define HAND_FOLLOW_POS     0X38
 /*******************升降机构*********************/
 #define LIFT_IN_POSITION    0X39
+/*******************Modbus**********************/
+#define GET_CONTROLLER_RS485_MODE 0X3A
+#define GET_TOOL_RS485_MODE 0X3B
+#define SET_MODBUS_MODE 0X3C
+#define CLOSE_MODBUS_MODE 0X3D
+#define SET_MODBUSTCP_MODE 0X3E
+#define CLOSE_MODBUSTCP_MODE 0X3F
+
+#define READ_COILS 0X40
+#define READ_MULTIPLE_COILS 0X41
+#define WRITE_SINGLE_COIL 0X42
+#define WRITE_COILS 0X43
+#define READ_INPUT_STATUS 0X44
+#define READ_HOLDING_REGISTERS 0X45
+#define WRITE_SINGLE_REGISTER 0X46
+#define WRITE_REGISTERS 0X47
+#define READ_MULTIPLE_HOLDING_REGISTERS 0X48
+#define READ_INPUT_REGISTERS 0X49
+#define READ_MULTIPLE_INPUT_REGISTERS 0X4A
+#define SET_RM_PLUS_MODE 0X4B
+#define GET_RM_PLUS_MODE 0X4C
+#define SET_RM_PLUS_TOUCH 0X4D
+#define GET_RM_PLUS_TOUCH 0X4E
+
 float min_interval = 0.02;              //透传周期,单位:秒
 float udp_min_interval = 0.005;          //机械臂状态发布,单位:秒
 
@@ -1288,6 +1389,14 @@ int Udp_Set_Realtime_Push(uint16_t cycle, uint16_t port, uint16_t force_coordina
         cJSON_AddTrueToObject(custom_set, "hand");
     else
         cJSON_AddFalseToObject(custom_set, "hand");
+    if(custom_data.rm_plus_state_ == true)
+        cJSON_AddTrueToObject(custom_set, "rm_plus_state");
+    else
+        cJSON_AddFalseToObject(custom_set, "rm_plus_state");
+    if(custom_data.rm_plus_base_ == true)
+        cJSON_AddTrueToObject(custom_set, "rm_plus_base");
+    else
+        cJSON_AddFalseToObject(custom_set, "rm_plus_base");
     if(custom_data.expand_state_ == true)
         cJSON_AddTrueToObject(custom_set, "expand_state");
     else
@@ -2439,10 +2548,556 @@ int GetRealtimePush_Cmd()
     }
     return 0;
 }
+//modbus模式配置
+int Set_RS485_Cmd(uint32_t baudrate)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "set_RS485");
+    cJSON_AddNumberToObject(root, "baudrate", baudrate);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    ROS_INFO("set_RS485 cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
 
+}
+int Get_Controller_RS485_Mode_Cmd()
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "get_controller_RS485_mode");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("get_controller_RS485_mode cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Get_Tool_RS485_Mode_Cmd()
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "get_tool_RS485_mode");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("get_tool_RS485_mode cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Set_Modbus_Mode_Cmd(uint8_t port, uint32_t baudrate, uint32_t timeout)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "set_modbus_mode");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "baudrate", baudrate);
+    cJSON_AddNumberToObject(root, "timeout", timeout);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("set_modbus_mode cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Close_Modbus_Mode_Cmd(uint8_t port)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "close_modbus_mode");
+    cJSON_AddNumberToObject(root, "port", port);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("close_modbus_mode cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Set_Modbustcp_Mode_Cmd(std::string ip, uint32_t port, uint32_t timeout)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "set_modbustcp_mode");
+    cJSON_AddStringToObject(root, "ip", ip.c_str());
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "timeout", timeout);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("set_modbustcp_mode cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Close_Modbustcp_Mode_Cmd()
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "close_modbustcp_mode");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("close_modbustcp_mode cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+//Modbus协议指令
+int Read_Coils_Cmd(uint8_t port, uint32_t address, uint32_t  num, uint32_t device)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "read_coils");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("read_coils cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Read_Multiple_Coils_Cmd(uint8_t port, uint32_t address, uint32_t  num, uint32_t device)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "read_multiple_coils");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("read_multiple_coils cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Write_Single_Coil_Cmd(uint8_t port, uint32_t address, uint16_t data_content, uint32_t device)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "write_single_coil");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "data", data_content);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("write_single_coil cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Write_Coils_Cmd(uint8_t port, uint32_t address, uint32_t num, std::vector<uint16_t> data_content, uint32_t device)
+{
+    cJSON *root,*array;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "write_coils");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    //数组加入数据
+    for(int i =0;i<data_content.size();i++)
+        cJSON_AddNumberToObject(array, "data", data_content[i]);
+    cJSON_AddItemToObject(root, "data", array);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("write_coils cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Read_Input_Status_Cmd(uint8_t port, uint32_t address, uint32_t  num, uint32_t device)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "read_input_status");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("read_input_status cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Read_Holding_Registers_Cmd(uint8_t port, uint32_t address, uint32_t device)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "read_holding_registers");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("read_holding_registers cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Write_Single_Register_Cmd(uint8_t port, uint32_t address, uint16_t data_content, uint32_t device)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "write_single_register");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "data", data_content);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("write_single_register cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Write_Registers_Cmd(uint8_t port, uint32_t address, uint32_t num, std::vector<uint16_t> data_content, uint32_t device)
+{
+    cJSON *root,*array;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "write_registers");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    for(int i =0;i<data_content.size();i++)
+        cJSON_AddNumberToObject(array, "data", data_content[i]);
+    cJSON_AddItemToObject(root, "data", array);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("write_registers cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Read_Multiple_Holding_Registers_Cmd(uint8_t port, uint32_t address, uint32_t  num, uint32_t device)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "read_multiple_holding_registers");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("read_multiple_holding_registers cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Read_Input_Registers_Cmd(uint8_t port, uint32_t address, uint32_t device)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "read_input_registers");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("read_input_registers cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Read_Multiple_Input_Registers_Cmd(uint8_t port, uint32_t address, uint32_t  num, uint32_t device)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "read_multiple_input_registers");
+    cJSON_AddNumberToObject(root, "port", port);
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("read_multiple_input_registers cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Set_Rm_Plus_Mode_Cmd(uint32_t mode)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "set_rm_plus_mode");
+    cJSON_AddNumberToObject(root, "mode", mode);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("set_rm_plus_mode cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Get_Rm_Plus_Mode_Cmd()
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "get_rm_plus_mode");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("get_rm_plus_mode cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
 
+int Set_Rm_Plus_Touch_Cmd(uint32_t mode)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "set_rm_plus_touch");
+    cJSON_AddNumberToObject(root, "mode", mode);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("set_rm_plus_touch cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
 
-
+int Get_Rm_Plus_Touch_Cmd()
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "get_rm_plus_touch");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("get_rm_plus_touch cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
 //角度透传
 int Movej_CANFD(float *joint,float expand,bool follow, uint8_t trajectory_mode, uint8_t radio)
 {
@@ -3279,8 +3934,7 @@ int Parser_Plan_State(char *msg)
         cJSON_Delete(root);
         return 2;
     }
-    ROS_INFO("4444444444444444");
-    result = cJSON_GetObjectItem(root, "set_state");
+    result = cJSON_GetObjectItem(root, "trajectory_state");
     if ((result->type == cJSON_True) || (result->type == cJSON_False))
     {
         RM_Joint.plan_flag = result->valueint;
@@ -3376,7 +4030,7 @@ int Get_Arm_Software_Version()
 //查询机械臂当前状态
 int Parser_Arm_Current_State(char *msg)
 {
-    cJSON *root = NULL, *arm_state, *joint, *pose, *arm_err, *sys_err;
+    cJSON *root = NULL, *arm_state, *joint, *pose, *arm_err, *err;
     root = cJSON_Parse(msg);
     int i = 0;
 
@@ -3402,19 +4056,15 @@ int Parser_Arm_Current_State(char *msg)
         Arm_Current_State.joint[6] = cJSON_GetArrayItem(joint, 6)->valueint;
     }
 
-    arm_err = cJSON_GetObjectItem(arm_state, "arm_err");
-    sys_err = cJSON_GetObjectItem(arm_state, "sys_err");
-    // ROS_INFO("Arm_Current_State.arm_err: %d", arm_err->valueint);
-
-    if (startMulitiDragTeach)
+    err = cJSON_GetObjectItem(arm_state,"err");
+ 
+    int Err_size = cJSON_GetArraySize(err);//可以获取长度
+    Arm_Current_State.error.resize(Err_size);
+    for(i = 0; i < Err_size; i++)
     {
-        Arm_Current_State.arm_err = 0;
+        Arm_Current_State.error[i] = cJSON_GetArrayItem(err, i)->valueint;
+        // ROS_INFO("Arm_Current_State.arm_err: %d", Arm_Current_State.error[i]);
     }
-    else
-    {
-        Arm_Current_State.arm_err = arm_err->valueint;
-    }
-    Arm_Current_State.sys_err = sys_err->valueint;
 
     // ROS_INFO("Arm_Current_State.arm_err: %d", Arm_Current_State.arm_err);
 
@@ -4064,6 +4714,22 @@ int Parser_Get_Realtime_Push_Data(char *msg)
             else
                 Udp_Setting.custom_set_data.tail_end_ = false;
         }
+        result = cJSON_GetObjectItem(custom, "rm_plus_base");
+        if(result != NULL)
+        {
+            if(result->type == cJSON_True)
+                Udp_Setting.custom_set_data.rm_plus_base_ = true;
+            else
+                Udp_Setting.custom_set_data.rm_plus_base_ = false;
+        }
+        result = cJSON_GetObjectItem(custom, "rm_plus_state");
+        if(result != NULL)
+        {
+            if(result->type == cJSON_True)
+                Udp_Setting.custom_set_data.rm_plus_state_ = true;
+            else
+                Udp_Setting.custom_set_data.rm_plus_state_ = false;
+        }
     }
     cJSON_Delete(root);
     return 0;
@@ -4090,8 +4756,6 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
         udp_arm_current_status.arm_current_status = Udp_RM_Joint.arm_current_status; 
         pub_ArmCurrentStatus.publish(udp_arm_current_status);
     }
-    
-
 /*************************************joint_status相关数据**************************************************/
     result = cJSON_GetObjectItem(root, "joint_status");
     /**********************获取电流数据******************************/
@@ -4245,11 +4909,11 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
             return 3;
         }
     }
-    else
-    {
-        cJSON_Delete(root);
-        return 1;
-    }
+    // else
+    // {
+    //     cJSON_Delete(root);
+    //     return 1;
+    // }
     /***********************************************************************/
 
     /***********************获取机械臂关节温度****************************/
@@ -4381,7 +5045,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
                 }
 
             }
-
+            
             else
             {
                 cJSON_Delete(root);
@@ -4406,8 +5070,8 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
                     data[i] = json_sub->valueint;
                     Udp_Hand_Data.hand_force[i] = data[i];
                     udp_hand_status.hand_force[i] = Udp_Hand_Data.hand_force[i];
+                    
                 }
-
             }
 
             else
@@ -4436,7 +5100,6 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
                     Udp_Hand_Data.hand_state[i] = data[i];
                     udp_hand_status.hand_state[i] = Udp_Hand_Data.hand_state[i];
                 }
-
                 pub_HandStatus.publish(udp_hand_status);
             }
 
@@ -4452,6 +5115,537 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
             return 1;
         }
     }
+/********************************************************************************************** */
+    result = cJSON_GetObjectItem(root, "rm_plus_state");
+    if(result != NULL)
+    {
+        /*****************************获取sys_state信息***************************/
+        json_member = cJSON_GetObjectItem(result, "sys_state");
+        if (json_member != NULL )
+        {
+            udp_plus_state.sys_state = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取sys_err信息***************************/
+        json_member = cJSON_GetObjectItem(result, "sys_err");
+        if (json_member != NULL )
+        {
+            udp_plus_state.sys_err = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取angle信息***************************/
+        json_member = cJSON_GetObjectItem(result, "angle");
+        if (json_member != NULL && json_member->type == cJSON_Array )
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.angle.resize(size);
+            for(int i = 0;i<size;i++)
+            {
+                udp_plus_state.angle[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+            // Udp_Hand_Data.hand_err = json_member->valueint;
+            // udp_plus_state.hand_err = Udp_Hand_Data.hand_err;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***********************************************************************/
+
+        /***************************获取hand_pos信息********************************/
+        json_member = cJSON_GetObjectItem(result, "current");
+        
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.current.resize(size);
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_state.current[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+
+        /***************************获取hand_angle信息********************************/
+        json_member = cJSON_GetObjectItem(result, "dof_err");
+
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.dof_err.resize(size);
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_state.dof_err[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***************************获取dof_state信息********************************/
+        json_member = cJSON_GetObjectItem(result, "dof_state");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.dof_state.resize(size);
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_state.dof_state[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+
+        /***************************获取normal_force信息********************************/
+        json_member = cJSON_GetObjectItem(result, "normal_force");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.normal_force.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_state.normal_force[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***************************获取pos信息********************************/
+        json_member = cJSON_GetObjectItem(result, "pos");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.pos.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_state.pos[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***************************获取speed信息********************************/
+        json_member = cJSON_GetObjectItem(result, "speed");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.speed.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_state.speed[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***************************获取tangential_force信息********************************/
+        json_member = cJSON_GetObjectItem(result, "tangential_force");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.tangential_force.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_state.tangential_force[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***************************获取tangential_force_dir信息********************************/
+        json_member = cJSON_GetObjectItem(result, "tangential_force_dir");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.tangential_force_dir.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_state.tangential_force_dir[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***************************获取tma信息********************************/
+        json_member = cJSON_GetObjectItem(result, "tma");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.tma.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_state.tma[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***************************获取tsa信息********************************/
+        json_member = cJSON_GetObjectItem(result, "tsa");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_state.tsa.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_state.tsa[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+            pub_RmPlusState.publish(udp_plus_state);
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+    }
+/********************************************rm_plus_base******************************************/
+    result = cJSON_GetObjectItem(root, "rm_plus_base");
+    if(result != NULL)
+    {
+        /*****************************获取bee信息***************************/
+        json_member = cJSON_GetObjectItem(result, "bee");
+        if (json_member != NULL )
+        {
+            udp_plus_base.bee = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取bv信息***************************/
+        json_member = cJSON_GetObjectItem(result, "bv");
+        if (json_member != NULL )
+        {
+            udp_plus_base.bv = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取check信息***************************/
+        json_member = cJSON_GetObjectItem(result, "check");
+        if (json_member != NULL )
+        {
+            udp_plus_base.check = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取dof信息***************************/
+        json_member = cJSON_GetObjectItem(result, "dof");
+        if (json_member != NULL )
+        {
+            udp_plus_base.dof = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取force信息***************************/
+        json_member = cJSON_GetObjectItem(result, "force");
+        if ( json_member != NULL )
+        {
+            if(json_member->type == cJSON_True)
+            udp_plus_base.force = true;
+            else if(json_member->type == cJSON_False)
+            udp_plus_base.force = false;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取hand信息***************************/
+        json_member = cJSON_GetObjectItem(result, "hand");
+        if (json_member != NULL )
+        {
+            udp_plus_base.hand = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取hv信息***************************/
+        json_member = cJSON_GetObjectItem(result, "hv");
+        if (json_member != NULL )
+        {
+            udp_plus_base.hv = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取id信息***************************/
+        json_member = cJSON_GetObjectItem(result, "id");
+        if (json_member != NULL )
+        {
+            udp_plus_base.id = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取manu信息***************************/
+        json_member = cJSON_GetObjectItem(result, "manu");
+        if (json_member != NULL )
+        {
+            udp_plus_base.manu = json_member->valuestring;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取sv信息***************************/
+        json_member = cJSON_GetObjectItem(result, "sv");
+        if (json_member != NULL )
+        {
+            udp_plus_base.sv = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取force信息***************************/
+        json_member = cJSON_GetObjectItem(result, "touch");
+        if ( json_member != NULL )
+        {
+            if(json_member->type == cJSON_True)
+            udp_plus_base.touch = true;
+            else if(json_member->type == cJSON_False)
+            udp_plus_base.touch = false;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取touch_num信息***************************/
+        json_member = cJSON_GetObjectItem(result, "touch_num");
+        if (json_member != NULL )
+        {
+            udp_plus_base.touch_num = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取touch_sw信息***************************/
+        json_member = cJSON_GetObjectItem(result, "touch_sw");
+        if (json_member != NULL )
+        {
+            udp_plus_base.touch_sw = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取type信息***************************/
+        json_member = cJSON_GetObjectItem(result, "type");
+        if (json_member != NULL )
+        {
+            udp_plus_base.type = json_member->valueint;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /*****************************获取angle信息***************************/
+        json_member = cJSON_GetObjectItem(result, "angle_low");
+        if (json_member != NULL && json_member->type == cJSON_Array )
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_base.angle_low.resize(size);
+            for(int i = 0;i<size;i++)
+            {
+                udp_plus_base.angle_low[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+            // Udp_Hand_Data.hand_err = json_member->valueint;
+            // udp_hand_status.hand_err = Udp_Hand_Data.hand_err;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***********************************************************************/
+
+        /*****************************获取angle信息***************************/
+        json_member = cJSON_GetObjectItem(result, "angle_up");
+        if (json_member != NULL && json_member->type == cJSON_Array )
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_base.angle_up.resize(size);
+            for(int i = 0;i<size;i++)
+            {
+                udp_plus_base.angle_up[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+            // Udp_Hand_Data.hand_err = json_member->valueint;
+            // udp_hand_status.hand_err = Udp_Hand_Data.hand_err;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***********************************************************************/
+        /*****************************获取force_low信息***************************/
+        json_member = cJSON_GetObjectItem(result, "force_low");
+        if (json_member != NULL && json_member->type == cJSON_Array )
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_base.force_low.resize(size);
+            for(int i = 0;i<size;i++)
+            {
+                udp_plus_base.force_low[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+            // Udp_Hand_Data.hand_err = json_member->valueint;
+            // udp_hand_status.hand_err = Udp_Hand_Data.hand_err;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***********************************************************************/
+        /*****************************获取force信息***************************/
+        json_member = cJSON_GetObjectItem(result, "force_up");
+        if (json_member != NULL && json_member->type == cJSON_Array )
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_base.force_up.resize(size);
+            for(int i = 0;i<size;i++)
+            {
+                udp_plus_base.force_up[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+            // Udp_Hand_Data.hand_err = json_member->valueint;
+            // udp_hand_status.hand_err = Udp_Hand_Data.hand_err;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***********************************************************************/
+        /***************************获取pos信息********************************/
+        json_member = cJSON_GetObjectItem(result, "pos_low");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_base.pos_low.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_base.pos_low[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***************************获取pos信息********************************/
+        json_member = cJSON_GetObjectItem(result, "pos_up");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_base.pos_up.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_base.pos_up[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***************************获取speed_low信息********************************/
+        json_member = cJSON_GetObjectItem(result, "speed_low");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_base.speed_low.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_base.speed_low[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+        /***************************获取speed_up信息********************************/
+        json_member = cJSON_GetObjectItem(result, "speed_up");
+        if (json_member != NULL && json_member->type == cJSON_Array)
+        {
+            size = cJSON_GetArraySize(json_member);
+            udp_plus_base.speed_up.resize(size);
+
+            for (i = 0; i < size; i++)
+            {
+                udp_plus_base.speed_up[i] = cJSON_GetArrayItem(json_member, i)->valueint;
+            }
+            pub_RmPlusBase.publish(udp_plus_base);
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return 1;
+        }
+    }
+
 
 /**********************************************state相关数据******************************************************/
     result = cJSON_GetObjectItem(root, "waypoint");
@@ -4747,6 +5941,23 @@ int Parser_Udp_Msg(char *msg)
     }
    
     /**********************************处理arm_err*************************/
+    json_state = cJSON_GetObjectItem(root,"err");
+    if (json_state != NULL && json_state->type == cJSON_Array)
+    {
+        int Err_size = cJSON_GetArraySize(json_state);//可以获取长度
+        udp_error.err.resize(Err_size);
+        for(int i = 0; i < Err_size; i++)
+        {
+            udp_error.err[i] = cJSON_GetArrayItem(json_state, i)->valueint;
+            // ROS_INFO("Arm_Current_State.arm_err: %d", Arm_Current_State.error[i]);
+        }
+        pub_UdpError.publish(udp_error);
+    }
+    else
+    {
+        cJSON_Delete(root);
+        return 1;
+    }
     // json_state = cJSON_GetObjectItem(root, "arm_err");
     // if (json_state != NULL && json_state->type == cJSON_Number)
     // {
@@ -4755,11 +5966,7 @@ int Parser_Udp_Msg(char *msg)
     //     pub_ArmError.publish(udp_arm_error);
     //     // ROS_INFO("arm_err = %d",arm_err);
     // }
-    // else
-    // {
-    //     cJSON_Delete(root);
-    //     return 1;
-    // }
+    
     
     /**********************************处理sys_err*************************/
     // json_state = cJSON_GetObjectItem(root, "sys_err");
@@ -4799,7 +6006,7 @@ int Parser_Udp_Msg(char *msg)
 
 int Parser_Msg(char *msg)
 {
-    cJSON *root = NULL, *json_state;
+    cJSON *root = NULL, *json_state, *json_sub;
     root = cJSON_Parse(msg);
     // ROS_INFO("all msg data is:%s", msg);
     int res = 0;
@@ -5056,7 +6263,7 @@ int Parser_Msg(char *msg)
     json_state = cJSON_GetObjectItem(root, "trajectory_state");
     if (json_state != NULL)
     {
-        ROS_INFO("33333333333333333333");
+        // ROS_INFO("33333333333333333333");
         res = Parser_Plan_State(msg);
         if (res == 0)
         {
@@ -5069,6 +6276,7 @@ int Parser_Msg(char *msg)
             return -5;
         }
     }
+    
     json_state = cJSON_GetObjectItem(root, "device");
     if(json_state!=NULL)
     {
@@ -5179,6 +6387,58 @@ int Parser_Msg(char *msg)
                     cJSON_Delete(root);
                     return -7;
                 }
+            }
+        }
+        else if (!strcmp("set_rm_plus_mode", json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "set_state");
+            if (json_state != NULL)
+            {
+                if (json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return SET_RM_PLUS_MODE;
+                }
+                else if (json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return SET_RM_PLUS_MODE;
+                }
+            }
+        }
+        else if (!strcmp("get_rm_plus_mode", json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "mode");
+            if (json_state != NULL)
+            {
+                RM_Joint.mode_result = json_state->valueint;
+                return GET_RM_PLUS_MODE;
+            }
+        }
+        else if (!strcmp("set_rm_plus_touch", json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "set_state");
+            if (json_state != NULL)
+            {
+                if (json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return SET_RM_PLUS_TOUCH;
+                }
+                else if (json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return SET_RM_PLUS_TOUCH;
+                }
+            }
+        }
+        else if (!strcmp("get_rm_plus_touch", json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "mode");
+            if (json_state != NULL)
+            {
+                RM_Joint.mode_result = json_state->valueint;
+                return GET_RM_PLUS_TOUCH;
             }
         }
         else if (!strcmp("stop_drag_teach", json_state->valuestring))
@@ -5809,6 +7069,315 @@ int Parser_Msg(char *msg)
                     return PLAN_STATE_TYPE;
                 }
             } 
+        }
+        /********************************Modbus模式配置************************************/
+        else if(!strcmp("get_controller_RS485_mode", json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root,"baudrate");
+            if(json_state!=NULL && json_state->type == cJSON_Number)
+            {
+                modbus_data.get_controller_RS485_mode.baudrate = json_state->valueint;
+            }
+            json_state = cJSON_GetObjectItem(root,"controller_RS485_mode");
+            if(json_state!=NULL && json_state->type == cJSON_Number)
+            {
+                modbus_data.get_controller_RS485_mode.controller_RS485_mode = json_state->valueint;
+            }
+            json_state = cJSON_GetObjectItem(root,"modbus_timeout");
+            if(json_state!=NULL && json_state->type == cJSON_Number)
+            {
+                modbus_data.get_controller_RS485_mode.modbus_timeout = json_state->valueint;
+            }
+            cJSON_Delete(root);
+            return GET_CONTROLLER_RS485_MODE;
+        }
+        else if(!strcmp("get_tool_RS485_mode", json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root,"baudrate");
+            if(json_state!=NULL && json_state->type == cJSON_Number)
+            {
+                modbus_data.get_tool_RS485_mode.baudrate = json_state->valueint;
+            }
+            json_state = cJSON_GetObjectItem(root,"tool_RS485_mode");
+            if(json_state!=NULL && json_state->type == cJSON_Number)
+            {
+                modbus_data.get_tool_RS485_mode.tool_RS485_mode = json_state->valueint;
+            }
+            json_state = cJSON_GetObjectItem(root,"modbus_timeout");
+            if(json_state!=NULL && json_state->type == cJSON_Number)
+            {
+                modbus_data.get_tool_RS485_mode.modbus_timeout = json_state->valueint;
+            }
+            cJSON_Delete(root);
+            return GET_TOOL_RS485_MODE;
+        }
+        else if(!strcmp("set_modbus_mode",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "set_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    modbus_data.state.data = true;
+                    return SET_MODBUS_MODE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    modbus_data.state.data = false;
+                    return SET_MODBUS_MODE;
+                }
+            }
+        }
+        else if(!strcmp("close_modbus_mode",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "set_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    modbus_data.state.data = true;
+                    return CLOSE_MODBUS_MODE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    modbus_data.state.data = false;
+                    return CLOSE_MODBUS_MODE;
+                }
+            }
+        }
+        else if(!strcmp("set_modbustcp_mode",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "set_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    modbus_data.state.data = true;
+                    return SET_MODBUSTCP_MODE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    modbus_data.state.data = false;
+                    return SET_MODBUSTCP_MODE;
+                }
+            }
+        }
+        else if(!strcmp("close_modbustcp_mode",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "set_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    modbus_data.state.data = true;
+                    return CLOSE_MODBUSTCP_MODE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    modbus_data.state.data = false;
+                    return CLOSE_MODBUSTCP_MODE;
+                }
+            }
+        }
+        /********************************Modbus读写寄存器************************************/
+        else if(!strcmp("read_coils",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "data");
+            if(json_state != NULL && json_state->type == cJSON_Number)
+            {
+                modbus_data.read_coils.data[0] = json_state->valueint;
+                modbus_data.read_coils.state = true;
+            }
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if(json_state != NULL && json_state->type == cJSON_False)
+            {
+                modbus_data.read_coils.state = false;
+                return READ_COILS;
+            }
+            return READ_COILS;
+        }
+        else if(!strcmp("read_multiple_coils",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "data");
+            if(json_state != NULL && json_state->type == cJSON_Array)
+            {
+                int size = cJSON_GetArraySize(json_state);
+                modbus_data.read_multiple_coils.data.resize(size);
+                for (int i=0;i<size;i++)
+                {
+                    json_sub = cJSON_GetArrayItem(json_state,i);
+                    modbus_data.read_multiple_coils.data[i]=json_sub->valueint;
+                }
+                modbus_data.read_multiple_coils.state = true;
+            }
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if(json_state != NULL && json_state->type == cJSON_False)
+            {
+                modbus_data.read_multiple_coils.state = false;
+                return READ_MULTIPLE_COILS;
+            }
+            return READ_MULTIPLE_COILS;
+        }
+        else if(!strcmp("read_input_status",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "data");
+            if(json_state != NULL && json_state->type == cJSON_Number)
+            {
+                modbus_data.read_input_status.data[0] = json_state->valueint;
+                modbus_data.read_input_status.state = true;
+            }
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if(json_state != NULL && json_state->type == cJSON_False)
+            {
+                modbus_data.read_input_status.state = false;
+                return READ_INPUT_STATUS;
+            }
+            return READ_INPUT_STATUS;
+        }
+        else if(!strcmp("read_holding_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "data");
+            if(json_state != NULL && json_state->type == cJSON_Number)
+            {
+                modbus_data.read_holding_registers.data[0] = json_state->valueint;
+                modbus_data.read_holding_registers.state = true;
+            }
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if(json_state != NULL && json_state->type == cJSON_False)
+            {
+                modbus_data.read_holding_registers.state = false;
+                return READ_HOLDING_REGISTERS;
+            }
+            return READ_HOLDING_REGISTERS;
+        }
+        else if(!strcmp("read_multiple_holding_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "data");
+            if(json_state != NULL && json_state->type == cJSON_Array)
+            {
+                int size = cJSON_GetArraySize(json_state);
+                modbus_data.read_multiple_holding_registers.data.resize(size);
+                for (int i=0;i<size;i++)
+                {
+                    json_sub = cJSON_GetArrayItem(json_state,i);
+                    modbus_data.read_multiple_holding_registers.data[i]=json_sub->valueint;
+                }
+                modbus_data.read_multiple_holding_registers.state = true;
+            }
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if(json_state != NULL && json_state->type == cJSON_False)
+            {
+                modbus_data.read_multiple_holding_registers.state = false;
+                return READ_MULTIPLE_HOLDING_REGISTERS;
+            }
+            return READ_MULTIPLE_HOLDING_REGISTERS;
+        }
+        else if(!strcmp("read_input_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "data");
+            if(json_state != NULL && json_state->type == cJSON_Number)
+            {
+                modbus_data.read_input_registers.data[0] = json_state->valueint;
+                modbus_data.read_input_registers.state = true;
+            }
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if(json_state != NULL && json_state->type == cJSON_False)
+            {
+                modbus_data.read_input_registers.state = false;
+                return READ_INPUT_REGISTERS;
+            }
+            return READ_INPUT_REGISTERS;
+        }
+        else if(!strcmp("read_multiple_input_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "data");
+            
+            if(json_state != NULL && json_state->type == cJSON_Array)
+            {
+                int size = cJSON_GetArraySize(json_state);
+                modbus_data.read_multiple_input_registers.data.resize(size);
+                for (int i=0;i<size;i++)
+                {
+                    json_sub = cJSON_GetArrayItem(json_state,i);
+                    modbus_data.read_multiple_input_registers.data[i]=json_sub->valueint;
+                }
+                modbus_data.read_multiple_input_registers.state = true;
+            }
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if(json_state != NULL && json_state->type == cJSON_False)
+            {
+                modbus_data.read_multiple_input_registers.state = false;
+                return READ_MULTIPLE_INPUT_REGISTERS;
+            }
+            return READ_MULTIPLE_INPUT_REGISTERS;
+        }
+        else if(!strcmp("write_single_coil",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "write_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    modbus_data.state.data = true;
+                    return WRITE_SINGLE_COIL;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    modbus_data.state.data = false;
+                    return WRITE_SINGLE_COIL;
+                }
+            }
+        }
+        else if(!strcmp("write_coils",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "write_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    modbus_data.state.data = true;
+                    return WRITE_COILS;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    modbus_data.state.data = false;
+                    return WRITE_COILS;
+                }
+            }
+        }
+        else if(!strcmp("write_single_register",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "write_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    modbus_data.state.data = true;
+                    return WRITE_SINGLE_REGISTER;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    modbus_data.state.data = false;
+                    return WRITE_SINGLE_REGISTER;
+                }
+            }
+        }
+        else if(!strcmp("write_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "write_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    modbus_data.state.data = true;
+                    return WRITE_REGISTERS;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    modbus_data.state.data = false;
+                    return WRITE_REGISTERS;
+                }
+            }
         }
     }
 
