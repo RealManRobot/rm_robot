@@ -1,0 +1,23 @@
+<launch>
+  <arg
+    name="model" />
+  <arg name="link6_type" default="Link6_6fb"/>  
+  <param
+    name="robot_description"
+    command="$(find xacro)/xacro $(find rm_description)/urdf/ECO63_6FB/rm_eco63_6fb_description.urdf.xacro
+                link6_type:=$(arg link6_type)
+                " />
+  <node
+    name="joint_state_publisher_gui"
+    pkg="joint_state_publisher_gui"
+    type="joint_state_publisher_gui" />
+  <node
+    name="robot_state_publisher"
+    pkg="robot_state_publisher"
+    type="robot_state_publisher" />
+  <node
+    name="rviz"
+    pkg="rviz"
+    type="rviz"
+    args="-d $(find rm_description)/config/ECO63.rviz" />
+</launch>

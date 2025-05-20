@@ -73,7 +73,8 @@ double rate = 0.010;    // 10ms
 
 ros::Publisher target_pub;        //Real robot
 ros::Publisher system_error_clean_pub; 
-ros::Subscriber get_ArmError; 
+ros::Subscriber get_ArmError;
+ros::Subscriber get_ArmStop; 
 rm_msgs::JointPos joint_pos_msg;
 
 float min_interval = 0.01;  //透传周期,单位:秒
@@ -283,6 +284,12 @@ void getArmError_Callback(const std_msgs::UInt16 msg)
     rm_arm_error = msg.data;
 }
 
+void getArmStop_Callback(const std_msgs::Empty msg)
+{
+    point_changed=false;
+    // ROS_INFO("Arm Stop is true!");
+}
+
 /* 收到action的goal后调用的回调函数 */
 void execute(const control_msgs::FollowJointTrajectoryGoalConstPtr& goal, Server* as) {
 
@@ -475,7 +482,7 @@ void execute(const control_msgs::FollowJointTrajectoryGoalConstPtr& goal, Server
                                 //as->publishFeedback(feedback);
                                 if(arm_dof == 6)
                                 {
-                                    ROS_INFO("Now We get all tarjectory num %d", time_from_start_.size());
+                                    ROS_INFO("Now We get all tarjectory num %zu", time_from_start_.size());
 
                                     p2.vector_len = time_from_start_.size();
                                     p2.vector_cnt = 0;
@@ -515,7 +522,7 @@ void execute(const control_msgs::FollowJointTrajectoryGoalConstPtr& goal, Server
                                             a_joint7_.push_back(acc);
                                         }
 
-                                        ROS_INFO("Now We get all tarjectory num %d", time_from_start_.size());
+                                        ROS_INFO("Now We get all tarjectory num %zu", time_from_start_.size());
 
                                         p2.vector_len = time_from_start_.size();
                                         p2.vector_cnt = 0;
@@ -635,6 +642,7 @@ void timer_callback(const ros::TimerEvent)
 
     if(point_changed)
     {
+        // ROS_INFO("send success!");
         if(p2.vector_cnt < p2.vector_len)
         {
             // ROS_INFO("Pos:[%f, %f, %f, %f, %f, %f]",  p_joint1_.at(p2.vector_cnt), p_joint2_.at(p2.vector_cnt), p_joint3_.at(p2.vector_cnt), p_joint4_.at(p2.vector_cnt), p_joint5_.at(p2.vector_cnt), p_joint6_.at(p2.vector_cnt));
@@ -720,6 +728,7 @@ int main(int argc, char** argv)
     //timer,10ms
     State_Timer = nh.createTimer(ros::Duration(min_interval), timer_callback);
     get_ArmError = nh.subscribe("/rm_driver/ArmError", 100, getArmError_Callback);
+    get_ArmStop = nh.subscribe("rm_driver/Emergency_Stop",1,getArmStop_Callback);
     system_error_clean_pub = nh.advertise<std_msgs::Empty>("/rm_driver/Clear_System_Err", 300);
     target_pub = nh.advertise<rm_msgs::JointPos>("/rm_driver/JointPos", 300);
     // pub_getArmStateTimerSwitch = nh.advertise<std_msgs::Bool>("/rm_driver/GetArmStateTimerSwitch", 200);

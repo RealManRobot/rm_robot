@@ -1,0 +1,10 @@
+<launch>
+
+  <arg name="Arm_Dof"                  default="7"/>               <!-- 机械臂自由度设置 -->
+
+  <node name="api_Control_Arm_Move_demo" pkg="control_arm_move" type="api_Control_Arm_Move_demo" respawn="false" output="screen">
+  <!-- 运动参数 -->
+  <param name="Arm_Dof"               value="$(arg Arm_Dof)"/>     <!-- 机械臂自由度参数 -->
+  </node>
+
+</launch>

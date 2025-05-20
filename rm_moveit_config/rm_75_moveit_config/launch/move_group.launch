@@ -39,9 +39,11 @@
   -->
 
   <arg name="load_robot_description" default="true" />
+  <arg name="link7_type" default="Link7"/>
   <!-- load URDF, SRDF and joint_limits configuration -->
   <include file="$(find rm_75_moveit_config)/launch/planning_context.launch">
     <arg name="load_robot_description" value="$(arg load_robot_description)" />
+    <arg name="link7_type" value="$(arg link7_type)" />
   </include>
 
   <!-- Planning Functionality -->

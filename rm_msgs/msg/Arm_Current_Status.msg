@@ -1,0 +1,1 @@
+string arm_current_status

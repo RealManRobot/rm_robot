@@ -1,0 +1,5 @@
+<launch>
+  <node name="api_Force_Position_Control_demo" pkg="force_position_control" type="api_Force_Position_Control_demo" respawn="false" output="screen">
+  </node>
+
+</launch>

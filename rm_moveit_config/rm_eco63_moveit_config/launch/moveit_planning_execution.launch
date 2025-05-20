@@ -1,0 +1,23 @@
+<launch>
+
+  <arg name="rviz_gazebo_config" default="$(find rm_gazebo)/config/ECO63/rviz_gazebo.rviz"/>
+  <arg name="link6_type" default="Link6"/>
+ # The planning and execution components of MoveIt! configured to 
+ # publish the current configuration of the robot (simulated or real)
+ # and the current state of the world as seen by the planner
+ <include file="$(find rm_eco63_moveit_config)/launch/move_group.launch">
+  <arg name="publish_monitored_planning_scene" value="true" />
+  <arg name="link6_type" value="$(arg link6_type)" />
+ </include>
+ # The visualization component of MoveIt!
+ <include file="$(find rm_eco63_moveit_config)/launch/moveit_rviz.launch">
+  <arg name="rviz_config" value="$(arg rviz_gazebo_config)" />
+ </include>
+
+  <!-- We do not have a robot connected, so publish fake joint states -->
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <param name="/use_gui" value="false"/> 
+    <rosparam param="/source_list">[/arm/joint_states]</rosparam>
+  </node>
+
+</launch>

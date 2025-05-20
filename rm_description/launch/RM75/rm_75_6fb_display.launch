@@ -1,0 +1,29 @@
+<launch>
+  <arg
+    name="model" />
+  <arg name="link7_type" default="Link7_6fb"/>
+  <arg
+    name="gui"
+    default="False" />
+  <param name="robot_description" 
+    command="$(find xacro)/xacro $(find rm_description)/urdf/RM75_6FB/rm_75_6fb_description.urdf.xacro
+                link7_type:=$(arg link7_type)
+                " />
+  <param
+    name="use_gui"
+    value="$(arg gui)" />
+  <!-- <node
+    name="joint_state_publisher"
+    pkg="joint_state_publisher"
+    type="joint_state_publisher" /> -->
+  <node
+    name="robot_state_publisher"
+    pkg="robot_state_publisher"
+    type="robot_state_publisher" />
+  <node pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" name="joint_state_publisher_gui" output="screen" />
+  <node
+    name="rviz"
+    pkg="rviz"
+    type="rviz"
+    args="-d $(find rm_description)/config/RM75.rviz" />
+</launch>

@@ -5,8 +5,14 @@
   <!-- The name of the parameter under which the URDF is loaded -->
   <arg name="robot_description" default="robot_description"/>
 
+  <!-- Define the link7_type for the xacro file -->
+  <arg name="link7_type" default="Link7"/>
+
   <!-- Load universal robot description format (URDF) -->
-  <param if="$(arg load_robot_description)" name="$(arg robot_description)" command="xacro  '$(find rm_description)/urdf/RM75/rm_75_bottom.urdf.xacro'"/>
+  <param if="$(arg load_robot_description)" name="$(arg robot_description)" 
+  command="$(find xacro)/xacro $(find rm_description)/urdf/RM75_6FB/rm_75_6fb_description.urdf.xacro         
+  link7_type:=$(arg link7_type)
+  "/>
 
   <!-- The semantic description that corresponds to the URDF -->
   <param name="$(arg robot_description)_semantic" textfile="$(find rm_75_moveit_config)/config/rm_75.srdf" />

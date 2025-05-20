@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-1-g15f4949  Build Version: 1.6.7594.29634
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="GEN72">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.000608631901818564 0.000101410726070973 0.0500536421991602"
+        rpy="0 0 0" />
+      <mass
+        value="0.725732275378994" />
+      <inertia
+        ixx="0.00116526259423606"
+        ixy="3.86984316704955E-06"
+        ixz="3.61598587634246E-05"
+        iyy="0.00114387938317596"
+        iyz="-1.69159329895203E-06"
+        izz="0.000799620751622038" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Link1">
+    <inertial>
+      <origin
+        xyz="3.52736919702029E-07 -6.04059891453142E-05 -0.0474562080382229"
+        rpy="0 0 0" />
+      <mass
+        value="0.511231574249026" />
+      <inertia
+        ixx="0.000959440498156717"
+        ixy="-1.91894958276915E-09"
+        ixz="-7.95162454105223E-09"
+        iyy="0.00102039305580009"
+        iyz="1.46570350841548E-06"
+        izz="0.000388714614553318" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint1"
+    type="revolute">
+    <origin
+      xyz="0 0 0.218"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="Link1" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-3.0014"
+      upper="3.0014"
+      effort="25"
+      velocity="3.141" />
+  </joint>
+  <link
+    name="Link2">
+    <inertial>
+      <origin
+        xyz="-7.11112352596068E-07 -0.0576246199640847 -3.88448280838247E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.551907049708684" />
+      <inertia
+        ixx="0.00142140355638731"
+        ixy="-1.11238202743335E-08"
+        ixz="1.36442937553009E-08"
+        iyy="0.000525714318152211"
+        iyz="1.30499854599536E-06"
+        izz="0.00127234964264819" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint2"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link1" />
+    <child
+      link="Link2" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.8323"
+      upper="1.8323"
+      effort="25"
+      velocity="3.141" />
+  </joint>
+  <link
+    name="Link3">
+    <inertial>
+      <origin
+        xyz="0.00897441808005477 2.62636660835183E-05 -0.0738284677079453"
+        rpy="0 0 0" />
+      <mass
+        value="0.774130504869361" />
+      <inertia
+        ixx="0.00242102089342123"
+        ixy="-6.22567011177705E-07"
+        ixz="-0.000489521698616636"
+        iyy="0.00248694348279809"
+        iyz="-1.48555517772802E-06"
+        izz="0.000900997447038447" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link3.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint3"
+    type="revolute">
+    <origin
+      xyz="0 -0.28 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link2" />
+    <child
+      link="Link3" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-3.0014"
+      upper="3.0014"
+      effort="25"
+      velocity="3.141" />
+  </joint>
+  <link
+    name="Link4">
+    <inertial>
+      <origin
+        xyz="-0.00962439034462223 0.0352034284437733 0.000174576348458631"
+        rpy="0 0 0" />
+      <mass
+        value="0.437130215851277" />
+      <inertia
+        ixx="0.000866914153243563"
+        ixy="0.000148761646911636"
+        ixz="-7.42553547115028E-07"
+        iyy="0.000267753002586622"
+        iyz="2.68058265443959E-06"
+        izz="0.000952324298922687" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link4.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link4.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint4"
+    type="revolute">
+    <origin
+      xyz="0.04 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link3" />
+    <child
+      link="Link4" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-2.8792"
+      upper="0.9597"
+      effort="25"
+      velocity="3.141" />
+  </joint>
+  <link
+    name="Link5">
+    <inertial>
+      <origin
+        xyz="-4.79650184265212E-07 -3.84737693796814E-05 -0.0669554881104284"
+        rpy="0 0 0" />
+      <mass
+        value="0.424276753764533" />
+      <inertia
+        ixx="0.00112444890113163"
+        ixy="7.56623220322765E-09"
+        ixz="-1.71276249952398E-08"
+        iyy="0.00103382374928125"
+        iyz="8.24694417490181E-07"
+        izz="0.000274640088277489" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link5.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link5.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint5"
+    type="revolute">
+    <origin
+      xyz="-0.019 0.2525 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link4" />
+    <child
+      link="Link5" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-3.0014"
+      upper="3.0014"
+      effort="5"
+      velocity="3.926" />
+  </joint>
+  <link
+    name="Link6">
+    <inertial>
+      <origin
+        xyz="0.00184221175785321 0.0379763273402476 -9.2109082789162E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.302793071336592" />
+      <inertia
+        ixx="0.000140114798143356"
+        ixy="-3.0020621302762E-06"
+        ixz="-4.58156507440607E-10"
+        iyy="0.000132631412915026"
+        iyz="7.01344406582159E-10"
+        izz="0.000155721318559448" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link6.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link6.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint6"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link5" />
+    <child
+      link="Link6" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.707"
+      upper="1.783"
+      effort="5"
+      velocity="3.926" />
+  </joint>
+  <link
+    name="Link7">
+    <inertial>
+      <origin
+        xyz="0.000200062483601049 1.38702560039998E-08 -0.0292498560100851"
+        rpy="0 0 0" />
+      <mass
+        value="0.176612671716239" />
+      <inertia
+        ixx="6.24286469682688E-05"
+        ixy="5.70592007031404E-10"
+        ixz="-4.73833817662725E-11"
+        iyy="6.24286273697226E-05"
+        iyz="-4.26919211524294E-11"
+        izz="8.48642578603026E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link7.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/GEN72/Link7.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint7"
+    type="revolute">
+    <origin
+      xyz="0.0905 0.067 0"
+      rpy="1.5708 0 1.5708" />
+    <parent
+      link="Link6" />
+    <child
+      link="Link7" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-3.0014"
+      upper="3.0014"
+      effort="5"
+      velocity="3.926" />
+  </joint>
+</robot>

@@ -12,8 +12,9 @@ void GetArmState_Callback(const rm_msgs::Arm_Current_State msg)
     // 将接收到的消息打印出来，显示是否执行成功
     ROS_INFO("joint state is: [%f, %f, %f, %f, %f, %f]\n", msg.joint[0],msg.joint[1],msg.joint[2],msg.joint[3],msg.joint[4],msg.joint[5]);
     ROS_INFO("pose state is: [%f, %f, %f, %f, %f, %f]\n", msg.Pose[0],msg.Pose[1],msg.Pose[2],msg.Pose[3],msg.Pose[4],msg.Pose[5]);
-    ROS_INFO("arm_err is:%d\n", msg.arm_err);
-    ROS_INFO("sys_err is:%d\n", msg.sys_err);
+    for(int i = 0; i<msg.err.size();i++ )
+    ROS_INFO("err is:%d\n", msg.err[i]);
+    // ROS_INFO("sys_err is:%d\n", msg.sys_err);
 }
 
 
