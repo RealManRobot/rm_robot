@@ -5117,7 +5117,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
     }
 /********************************************************************************************** */
     result = cJSON_GetObjectItem(root, "rm_plus_state");
-    if(result != NULL)
+    if((result != NULL)&&(strcmp("disable", result->valuestring)))
     {
         /*****************************获取sys_state信息***************************/
         json_member = cJSON_GetObjectItem(result, "sys_state");
@@ -5336,7 +5336,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
     }
 /********************************************rm_plus_base******************************************/
     result = cJSON_GetObjectItem(root, "rm_plus_base");
-    if(result != NULL)
+    if((result != NULL)&&(strcmp("disable", result->valuestring)))
     {
         /*****************************获取bee信息***************************/
         json_member = cJSON_GetObjectItem(result, "bee");
