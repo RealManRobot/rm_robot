@@ -23,6 +23,8 @@
 #include <sys/select.h>         //使用fd_set结构体时使用。
 #include <fcntl.h>  
 
+// 尝试解决中文乱码的问题加的 
+#include <locale>
 
 // messgae
 #include <rm_msgs/Arm_Analog_Output.h>
@@ -125,6 +127,28 @@
 #include <rm_msgs/Err.h>
 #include <rm_msgs/Rm_Plus_Base.h>
 #include <rm_msgs/Rm_Plus_State.h>
+/***** ***************2025.05.13 添加四代控制器适配***********************/
+#include <rm_msgs/Moveloffset.h>
+#include <rm_msgs/Softwarebuildinfo.h>
+#include <rm_msgs/Trajectoryinfo.h>
+#include <rm_msgs/Trajectorylist.h>
+#include <rm_msgs/Gettrajectorylist.h>
+#include <rm_msgs/Flowchartrunstate.h>
+#include <rm_msgs/Jointversion.h>
+#include <rm_msgs/Mastername.h>
+#include <rm_msgs/Modbusreaddata.h>
+#include <rm_msgs/Modbustcpmasterinfo.h>
+#include <rm_msgs/Modbustcpmasterlist.h>
+#include <rm_msgs/UpdateTCPmasterparam.h>
+#include <rm_msgs/Get_TCP_Master_List_Param.h>
+#include <rm_msgs/RS485params.h>
+
+#include <rm_msgs/Read_TCPandRTU.h>
+
+#include <rm_msgs/Write_TCPandRTU.h>
+
+#include <rm_msgs/Read_ModbusRTU.h>
+#include <rm_msgs/Write_ModbusRTU.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -227,6 +251,7 @@ extern "C"
 #define DATA_SIZE 300000
 
 typedef unsigned char byte;
+
 
 //位姿结构体
 typedef struct
@@ -364,6 +389,7 @@ bool udp_plus_state_ = false;           //末端设备实时信息
 bool udp_plus_base_ = false;           //末端设备基础信息
 int trajectory_mode_;                   //高跟随模式选择
 int radio_;                             //平滑系数
+bool is_4th_Gen_;                       //控制器版本选择
 /*******************************udp赋值变量*23.8.4*Author kaola********************************/
 bool realtime_arm_joint_state = true;
 char udp_failed_time = 0;
@@ -425,6 +451,22 @@ typedef struct{
 Modbus_Data modbus_data;
 
 /*******************************************************************************************************/
+/*********************************四代控制器新增 ***************************************************************/
+rm_msgs::Trajectorylist trajectory_list;
+rm_msgs::Flowchartrunstate flowchart_runstate;
+//rm_msgs::Arm_Softversion_v3 arm_software_info_v3;
+//rm_msgs::Arm_Softversion_v4 arm_software_info_v4;
+rm_msgs::Arm_Software_Version arm_version;
+std_msgs::String tool_software_version;
+rm_msgs::Jointversion joint_software_version;
+rm_msgs::Modbustcpmasterinfo modbustcp_master_info;
+rm_msgs::Modbustcpmasterlist modbustcp_master_list;
+rm_msgs::RS485params get_modbus_mode;
+rm_msgs::Register_Data read_modbus_data;
+int Modbus_Read_Case;            //modbus读数据情况
+int Modbus_Write_Case;           //modbus写数据情况
+/*******************************************************************************************************/
+
 
 geometry_msgs::Pose arm_pose;
 
@@ -516,10 +558,87 @@ ros::Publisher pub_Joint_En_State_Result;
 ros::Publisher pub_System_En_State_Result;
 /*******************************发布当前的受力基准坐标系***************************/
 ros::Publisher pub_Udp_Coordinate;
-// Update:2023-7-25 @HermanYe
-// Get controller version
-ros::Subscriber Sub_Get_Arm_Software_Version;
+/**********************************控制器获取版本信息*************************/
+ros::Subscriber Get_Arm_Software_Version_Cmd;
 ros::Publisher Get_Arm_Software_Version_Result;
+
+
+
+/***********************************四代控制器新增***********************************/
+/***********************************获取关节软件版本信息**********************************/
+ros::Subscriber Get_Joint_Software_Version_Cmd;
+ros::Publisher Get_Joint_Software_Version_Result;
+/***********************************获取末端接口板软件版本信息**********************************/
+ros::Subscriber Get_Tool_Software_Version_Cmd;
+ros::Publisher Get_Tool_Software_Version_Result;
+/***********************************设置机械臂急停状态***********************************/
+ros::Subscriber Set_Arm_Emergency_Stop_cmd;
+ros::Publisher Set_Arm_Emergency_Stop_Result;
+/***********************************查询流程图编程状态***********************************/
+ros::Subscriber Get_Trajectory_File_List_cmd;
+ros::Publisher Get_Trajectory_File_List_Result;
+/***********************************开始运行指定轨迹***********************************/
+ros::Subscriber Set_Run_Trajectory_cmd;
+ros::Publisher Set_Run_Trajectory_Result;
+/***********************************删除指定轨迹***********************************/
+ros::Subscriber Delete_Trajectory_File_cmd;
+ros::Publisher Delete_Trajectory_File_Result;
+/***********************************保存轨迹到控制机器***********************************/
+ros::Subscriber Save_Trajectory_File_cmd;
+ros::Publisher Save_Trajectory_File_Result;
+/***********************************查询流程图编程状态***********************************/
+ros::Subscriber Get_Flowchart_Program_Run_State_cmd;
+ros::Publisher Get_Flowchart_Program_Run_State_Result;
+/***********************************笛卡尔空间直线偏移运动***********************************/
+ros::Subscriber Movel_Offset_cmd;
+ros::Publisher Movel_Offset_Result;
+/***********************************新增Modbus TCP主站***********************************/
+ros::Subscriber Add_Modbus_Tcp_Master_cmd;
+ros::Publisher Add_Modbus_Tcp_Master_Result;
+/***********************************修改Modbus TCP主站***********************************/
+ros::Subscriber Update_Modbus_Tcp_Master_cmd;
+ros::Publisher Update_Modbus_Tcp_Master_Result;
+/***********************************删除Modbus TCP主站***********************************/
+ros::Subscriber Delete_Modbus_Tcp_Master_cmd;
+ros::Publisher Delete_Modbus_Tcp_Master_Result;
+/***********************************查询Modbus TCP主站***********************************/
+ros::Subscriber Get_Modbus_Tcp_Master_cmd;
+ros::Publisher Get_Modbus_Tcp_Master_Result;
+/***********************************查询TCP主站列表***********************************/
+ros::Subscriber Get_Modbus_Tcp_Master_List_cmd;
+ros::Publisher Get_Modbus_Tcp_Master_List_Result;
+/***********************************设置控制器RS485模式(四代控制器支持)***********************************/
+ros::Subscriber Set_Controller_Rs485_Mode_cmd;
+ros::Publisher Set_Controller_Rs485_Mode_Result;
+/***********************************查询控制器RS485模式(四代控制器支持)***********************************/
+ros::Subscriber Get_Controller_Rs485_Mode_V4_cmd;
+ros::Publisher Get_Controller_Rs485_Mode_V4_Result;
+/***********************************设置工具端RS485模式(四代控制器支持)***********************************/
+ros::Subscriber Set_Tool_Rs485_Mode_cmd;
+ros::Publisher Set_Tool_Rs485_Mode_Result;
+/***********************************查询工具端RS485模式(四代控制器支持)***********************************/
+ros::Subscriber Get_Tool_Rs485_Mode_V4_cmd;
+ros::Publisher Get_Tool_Rs485_Mode_V4_Result;
+
+/***********************************Modbus TCP协议读线圈和查询结果***********************************/
+ros::Subscriber Read_Modbus_Coils_cmd;
+ros::Publisher Read_Modbus_Coils_Result;
+/***********************************Modbus TCP协议写线圈和查询结果***********************************/
+ros::Subscriber Write_Modbus_Coils_cmd;
+ros::Publisher Write_Modbus_Coils_Result;
+/***********************************Modbus TCP协议读离散量输入和查询结果***********************************/
+ros::Subscriber Read_Modbus_Input_Status_cmd;
+ros::Publisher Read_Modbus_Input_Status_Result;
+/***********************************Modbus TCP协议读保持寄存器和查询结果***********************************/
+ros::Subscriber Read_Modbus_Holding_Registers_cmd;
+ros::Publisher Read_Modbus_Holding_Registers_Result;
+/***********************************Modbus TCP协议写保持寄存器和查询结果***********************************/
+ros::Subscriber Write_Modbus_Registers_cmd;
+ros::Publisher Write_Modbus_Registers_Result;
+/***********************************Modbus TCP协议读输入寄存器和查询结果***********************************/
+ros::Subscriber Read_Modbus_Input_Registers_cmd;
+ros::Publisher Read_Modbus_Input_Registers_Result;
+
 
 /***********************************设置末端生态协议模式***********************************/
 ros::Subscriber sub_setRmPlusMode;
@@ -632,6 +751,29 @@ uint16_t CONTROLLER_VERSION = 0;
 #define SET_RM_PLUS_TOUCH 0X4D
 #define GET_RM_PLUS_TOUCH 0X4E
 
+/*******************四代控制器新增**********************/
+#define SET_ARM_EMERGENCY_STOP 0X4F
+#define GET_TRAJECTORY_FILE_LIST 0X51
+#define SET_RUN_TRAJECTORY 0X52
+#define DELETE_TRAJECTORY_FILE 0X53
+#define SAVE_TRAJECTORY_FILE 0X54
+#define GET_FLOWCHART_PROGRAM_RUN_STATE 0X55
+#define MOVEL_OFFSET 0X56
+#define ARM_VERSION 0X57
+#define JOINT_VERSION 0X58
+#define TOOL_VERSION 0X59
+#define ADD_MODBUS_TCP_MASTER 0X5A
+#define UPDATE_MODBUS_TCP_MASTER 0X5B
+#define DELETE_MODBUS_TCP_MASTER 0X5C
+#define GET_MODBUS_TCP_MASTER 0X5D
+#define GET_MODBUS_TCP_MASTER_LIST 0X5E
+#define SET_CONTROLLER_RS485_MODE 0X5F
+#define GET_CONTROLLER_RS485_MODE_V4 0X61
+#define SET_TOOL_RS485_MODE 0X62
+#define GET_TOOL_RS485_MODE_V4 0X63
+#define MODBUS_READ 0X64
+#define MODBUS_WRITE 0X65
+
 float min_interval = 0.02;              //透传周期,单位:秒
 float udp_min_interval = 0.005;          //机械臂状态发布,单位:秒
 
@@ -639,6 +781,7 @@ int Arm_Socket;                         //机械臂TCp网络通信套接字
 int Udp_Sockfd;                         //机械臂UDP网络通信套接字
 int Arm_connect;                        //机械臂TCP连接状态
 int Arm_udp_connect;                    //机械臂UDP连接状态
+
 // const char *Arm_IP = "192.168.1.18"; //机械臂IP地址
 
 std::mutex send_mutex;
@@ -651,6 +794,35 @@ volatile int last_connect_status=1;     //上一connect_status状态变量，防
 int Info_Joint_Err(void);
 void Info_Arm_Err(void);
 
+
+// Unicode转义解码函数
+void decode_unicode_escape(char* str) {
+    char* p = str;
+    char* q = str;
+    while (*p) {
+        if (*p == '\\' && *(p+1) == 'u') {
+            // 1.提取四位十六进制值
+            unsigned int code;
+            sscanf(p+2, "%4x", &code);
+            
+            // 2.UTF-8编码转换
+            if (code <= 0x7F) {
+                *q++ = code;
+            } else if (code <= 0x7FF) {
+                *q++ = 0xC0 | (code >> 6);
+                *q++ = 0x80 | (code & 0x3F);
+            } else {
+                *q++ = 0xE0 | (code >> 12);
+                *q++ = 0x80 | ((code >> 6) & 0x3F);
+                *q++ = 0x80 | (code & 0x3F);
+            }
+            p += 6;
+        } else {
+            *q++ = *p++;
+        }
+    }
+    *q = '\0';
+}
 
 
 // send 套壳
@@ -810,7 +982,7 @@ int SocketConnected(void)
 {
     if(CONTROLLER_VERSION == 1)
     {
-        // ROS_INFO("SocketConnected is in %d",CONTROLLER_VERSION);
+        //ROS_INFO("SocketConnected is in %d",CONTROLLER_VERSION);
         if(Arm_Socket <= 0)
         {
             close(Arm_Socket);
@@ -997,7 +1169,7 @@ int Get_Total_Work_Frame(void)
 }
 
 //发送设置灵巧手手势的指令
-int SetHandPostureCmd(uint16_t posture_num)
+int SetHandPostureCmd(uint16_t posture_num, bool block)
 {
     cJSON *root;
     char *data;
@@ -1009,6 +1181,7 @@ int SetHandPostureCmd(uint16_t posture_num)
     //加入字符串对象
     cJSON_AddStringToObject(root, "command", "set_hand_posture");
     cJSON_AddNumberToObject(root, "posture_num", posture_num);
+    cJSON_AddBoolToObject(root, "block", block);
 
     data = cJSON_Print(root);
 
@@ -1028,7 +1201,7 @@ int SetHandPostureCmd(uint16_t posture_num)
 }
 
 //发送设置灵巧手动作序列的指令
-int SetHandSeqCmd(uint16_t seq_num)
+int SetHandSeqCmd(uint16_t seq_num, bool block)
 {
     cJSON *root;
     char *data;
@@ -1040,6 +1213,7 @@ int SetHandSeqCmd(uint16_t seq_num)
     //加入字符串对象
     cJSON_AddStringToObject(root, "command", "set_hand_seq");
     cJSON_AddNumberToObject(root, "seq_num", seq_num);
+    cJSON_AddBoolToObject(root, "block", block);
 
     data = cJSON_Print(root);
 
@@ -1121,7 +1295,7 @@ int SetHandForceCmd(uint16_t hand_force)
 }
 
 //发送设置灵巧手各自由度角度的命令
-int SetHandAngle(int16_t *hand_angle)
+int SetHandAngle(int16_t *hand_angle,bool block)
 {
     cJSON *root, *array;
     char *data;
@@ -1142,6 +1316,8 @@ int SetHandAngle(int16_t *hand_angle)
     //加入字符串对象
     cJSON_AddStringToObject(root, "command", "set_hand_angle");
     cJSON_AddItemToObject(root, "hand_angle", array);
+    cJSON_AddBoolToObject(root, "block", block);
+
 
     data = cJSON_Print(root);
 
@@ -2038,18 +2214,55 @@ int GetArmState_Cmd(std::string command)
  * 20220808修改: 增加对机械臂的复合拖动示教、力位混合控制、结束力位混合控制
  * *********************************************************************************/
 //开始复合模式拖动示教
-int Start_Multi_Drag_Teach_Cmd(byte mode)
+// old version
+// int Start_Multi_Drag_Teach_Cmd(byte mode)
+// {
+//     cJSON *root;
+//     char *data;
+//     char buffer[200];
+//     int res;
+//     //创建根节点对象
+//     root = cJSON_CreateObject();
+
+//     //加入字符串对象
+//     cJSON_AddStringToObject(root, "command", "start_multi_drag_teach");
+//     cJSON_AddNumberToObject(root, "mode", mode);
+
+//     data = cJSON_Print(root);
+
+//     sprintf(buffer, "%s\r\n", data);
+//     // res = send(Arm_Socket, buffer, strlen(buffer), 0);
+//     res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+//     cJSON_Delete(root);
+//     free(data);
+
+//     if (res < 0)
+//     {
+//         return 1;
+//     }
+//     return 0;
+// }
+// new version
+
+int Start_Multi_Drag_Teach_Cmd(int *free_axes,int frame, int singular_wall)
 {
-    cJSON *root;
+    cJSON *root, *array;
     char *data;
     char buffer[200];
     int res;
     //创建根节点对象
     root = cJSON_CreateObject();
-
+    array = cJSON_CreateArray();
     //加入字符串对象
     cJSON_AddStringToObject(root, "command", "start_multi_drag_teach");
-    cJSON_AddNumberToObject(root, "mode", mode);
+    //数组加入数据
+    for(int i =0;i<6;i++)
+        cJSON_AddNumberToObject(array, "free_axes", free_axes[i]);
+    cJSON_AddItemToObject(root, "free_axes", array);
+    cJSON_AddNumberToObject(root, "frame", frame);
+
+
+    cJSON_AddNumberToObject(root, "singular_wall", singular_wall);
 
     data = cJSON_Print(root);
 
@@ -4001,6 +4214,9 @@ int Parser_ChangeWorkFrame_State(char *msg)
 
 // Update:2023-7-25 @HermanYe
 // Get controller version
+
+// Update:2025-05-13 @Poppy
+// 四代控制器新增
 int Get_Arm_Software_Version()
 {
     cJSON *root;
@@ -4008,18 +4224,72 @@ int Get_Arm_Software_Version()
     char buffer[200];
     int res;
     int r = 0;
-
     root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "command", "get_arm_software_info");
-
     data = cJSON_Print(root);
     sprintf(buffer, "%s\r\n", data);
-
     res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
-
     cJSON_Delete(root);
     free(data);
-
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Get_Joint_Software_Version()
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    int r = 0;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "get_joint_software_version");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Get_Tool_Software_Version()
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    int r = 0;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "get_tool_software_version");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Parse_Set_Arm_Emergency_Stop(bool stop_state){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "set_arm_emergency_stop");
+    cJSON_AddNumberToObject(root, "emergency_stop", stop_state);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
     if (res < 0)
     {
         return 1;
@@ -4027,6 +4297,683 @@ int Get_Arm_Software_Version()
     return 0;
 }
 
+int Get_Trajectory_File_List(int page_num, int page_size, const char *vague_search){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "get_trajectory_file_list");
+    cJSON_AddNumberToObject(root, "page_num", page_num);
+    cJSON_AddNumberToObject(root, "page_size", page_size);
+    cJSON_AddStringToObject(root, "vague_search", vague_search);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Set_Run_Trajectory(std::string trajectory_name){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "set_run_trajectory_file");
+    cJSON_AddStringToObject(root, "name", trajectory_name.c_str());
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Delete_Trajectory_File(std::string trajectory_name){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "delete_trajectory_file");
+    cJSON_AddStringToObject(root, "name", trajectory_name.c_str());
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int Save_Trajectory_File(std::string trajectory_name){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "save_trajectory_file");
+    cJSON_AddStringToObject(root, "name", trajectory_name.c_str());
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;/*  */
+    }
+    return 0;
+}
+
+int Get_Flowchart_Program_Run_State(){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "get_flowchart_program_run_state");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int Movel_Offset(geometry_msgs::Pose offset, int v, int r, int trajectory_connect, int frame_type, int block)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "movel_offset");
+    cJSON* offset_arr = cJSON_CreateArray();
+    cJSON_AddItemToArray(offset_arr, cJSON_CreateNumber(offset.position.x));
+    cJSON_AddItemToArray(offset_arr, cJSON_CreateNumber(offset.position.y));
+    cJSON_AddItemToArray(offset_arr, cJSON_CreateNumber(offset.position.z));
+    cJSON_AddItemToArray(offset_arr, cJSON_CreateNumber(offset.orientation.x));
+    cJSON_AddItemToArray(offset_arr, cJSON_CreateNumber(offset.orientation.y));
+    cJSON_AddItemToArray(offset_arr, cJSON_CreateNumber(offset.orientation.z));
+    cJSON_AddItemToArray(offset_arr, cJSON_CreateNumber(offset.orientation.w));
+    cJSON_AddItemToObject(root, "offset", offset_arr);
+    cJSON_AddNumberToObject(root, "v", v);
+    cJSON_AddNumberToObject(root, "r", r);
+    cJSON_AddNumberToObject(root, "trajectory_connect", trajectory_connect);
+    cJSON_AddNumberToObject(root, "frame_type", frame_type);
+    cJSON_AddNumberToObject(root, "block", block);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+// ---------------------Modbus TCP 主站相关----------------------------------------
+int Add_Modbus_Tcp_Master(std::string master_name,std::string ip,int port){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "add_modbus_tcp_master");
+    cJSON_AddStringToObject(root, "master_name", master_name.c_str());
+    cJSON_AddStringToObject(root, "ip", ip.c_str());
+    cJSON_AddNumberToObject(root, "port", port);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Update_Modbus_Tcp_Master(std::string master_name,std::string new_name, std::string ip,int port){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "update_modbus_tcp_master");
+    cJSON_AddStringToObject(root, "master_name", master_name.c_str());
+    cJSON_AddStringToObject(root, "new_name", new_name.c_str());
+    cJSON_AddStringToObject(root, "ip", ip.c_str());
+    cJSON_AddNumberToObject(root, "port", port);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Delete_Modbus_Tcp_Master(std::string master_name){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "delete_modbus_tcp_master");
+    cJSON_AddStringToObject(root, "master_name", master_name.c_str());
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Get_Modbus_Tcp_Master(std::string master_name){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "given_modbus_tcp_master");
+    cJSON_AddStringToObject(root, "master_name", master_name.c_str());
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Get_Modbus_Tcp_Master_List(int page_num, int page_size, std::string vague_search){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "get_modbus_tcp_master_list");
+    cJSON_AddNumberToObject(root, "page_num", page_num);
+    cJSON_AddNumberToObject(root, "page_size", page_size);
+    cJSON_AddStringToObject(root, "vague_search", vague_search.c_str());
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int Set_Controller_Rs485_Mode(int mode, int baudrate){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "set_controller_rs485_mode");
+    cJSON_AddNumberToObject(root, "mode", mode);
+    cJSON_AddNumberToObject(root, "baudrate", baudrate);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Get_Controller_Rs485_Mode_V4(){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "get_controller_rs485_mode");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Set_Tool_Rs485_Mode(int mode, int baudrate){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "set_tool_rs485_mode");
+    cJSON_AddNumberToObject(root, "mode", mode);
+    cJSON_AddNumberToObject(root, "baudrate", baudrate);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Get_Tool_Rs485_Mode_V4(){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "get_tool_rs485_mode");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+//************************************************2025.6.17************************************************** */
+int Read_Modbus_Tcp_Coils(int address,int num,std::string ip,int port,std::string master_name){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "read_modbus_tcp_coils");
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    // 优先使用IP和Port
+    if (!ip.empty() && port > 0) {
+        cJSON_AddStringToObject(root, "ip", ip.c_str());
+        cJSON_AddNumberToObject(root, "port", port);
+    }
+    // 否则使用Master Name
+    else if (!master_name.empty()) {
+        cJSON_AddStringToObject(root, "master_name", master_name.c_str());
+    }
+    // 如果两者都没有，返回错误
+    else {
+        cJSON_Delete(root);
+        return 1;
+    }
+    data = cJSON_Print(root);
+    //printf("%s\n", data);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int Write_Modbus_Tcp_Coils(int address,std::vector<int> tcp_data,std::string ip,int port,std::string master_name){
+    cJSON *root,*data_array;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "write_modbus_tcp_coils");
+    cJSON_AddNumberToObject(root, "address", address);
+    data_array = cJSON_CreateArray();
+    for (int val : tcp_data) {
+        cJSON_AddItemToArray(data_array, cJSON_CreateNumber(val));
+    }
+    cJSON_AddItemToObject(root, "data", data_array);
+    // 优先使用IP和Port
+    if (!ip.empty() && port > 0) {
+        cJSON_AddStringToObject(root, "ip", ip.c_str());
+        cJSON_AddNumberToObject(root, "port", port);
+    }
+    // 否则使用Master Name
+    else if (!master_name.empty()) {
+        cJSON_AddStringToObject(root, "master_name", master_name.c_str());
+    }
+    // 如果两者都没有，返回错误
+    else {
+        cJSON_Delete(root);
+        return 1;
+    }
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // std::cout << data << std::endl;
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int Read_Modbus_Tcp_Input_Status(int address, int num,std::string ip,int port,std::string master_name){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "read_modbus_tcp_input_status");
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    // 优先使用IP和Port
+    if (!ip.empty() && port > 0) {
+        cJSON_AddStringToObject(root, "ip", ip.c_str());
+        cJSON_AddNumberToObject(root, "port", port);
+    }
+    // 否则使用Master Name
+    else if (!master_name.empty()) {
+        cJSON_AddStringToObject(root, "master_name", master_name.c_str());
+    }
+    // 如果两者都没有，返回错误
+    else {
+        cJSON_Delete(root);
+        return 1;
+    }
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int Read_Modbus_TCP_Holding_Registers(int address, int num,std::string ip,int port,std::string master_name){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "read_modbus_tcp_holding_registers");
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    // 优先使用IP和Port
+    if (!ip.empty() && port > 0) {
+        cJSON_AddStringToObject(root, "ip", ip.c_str());
+        cJSON_AddNumberToObject(root, "port", port);
+    }
+    // 否则使用Master Name
+    else if (!master_name.empty()) {
+        cJSON_AddStringToObject(root, "master_name", master_name.c_str());
+    }
+    // 如果两者都没有，返回错误
+    else {
+        cJSON_Delete(root);
+        return 1;
+    }
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int Write_Modbus_Tcp_Registers(int address,std::vector<int> tcp_data,std::string ip,int port,std::string master_name){
+    cJSON *root,*data_array;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "write_modbus_tcp_registers");
+    cJSON_AddNumberToObject(root, "address", address);
+    data_array = cJSON_CreateArray();
+    for (int val : tcp_data) {
+        cJSON_AddItemToArray(data_array, cJSON_CreateNumber(val));
+    }
+    cJSON_AddItemToObject(root, "data", data_array);
+    // 优先使用IP和Port
+    if (!ip.empty() && port > 0) {
+        cJSON_AddStringToObject(root, "ip", ip.c_str());
+        cJSON_AddNumberToObject(root, "port", port);
+    }
+    // 否则使用Master Name
+    else if (!master_name.empty()) {
+        cJSON_AddStringToObject(root, "master_name", master_name.c_str());
+    }
+    // 如果两者都没有，返回错误
+    else {
+        cJSON_Delete(root);
+        return 1;
+    }
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int Read_Modbus_Tcp_Input_Registers(int address, int num,std::string ip,int port,std::string master_name){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "read_modbus_tcp_input_registers");
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "num", num);
+    // 优先使用IP和Port
+    if (!ip.empty() && port > 0) {
+        cJSON_AddStringToObject(root, "ip", ip.c_str());
+        cJSON_AddNumberToObject(root, "port", port);
+    }
+    // 否则使用Master Name
+    else if (!master_name.empty()) {
+        cJSON_AddStringToObject(root, "master_name", master_name.c_str());
+    }
+    // 如果两者都没有，返回错误
+    else {
+        cJSON_Delete(root);
+        return 1;
+    }
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+// ----------------------------------------------------------------------------
+int Read_Modbus_Rtu_Coils(int address,int device,int num,int type){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "read_modbus_rtu_coils");
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "device", device);
+    cJSON_AddNumberToObject(root, "num", num);
+    cJSON_AddNumberToObject(root, "type", type);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int Write_Modbus_Rtu_Coils(int address,std::vector<int> rtu_data,int type,int device){
+    cJSON *root,*data_array;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "write_modbus_rtu_coils");
+    cJSON_AddNumberToObject(root, "address", address);
+    data_array = cJSON_CreateArray();
+    for (int val : rtu_data) {
+        cJSON_AddItemToArray(data_array, cJSON_CreateNumber(val));
+    }
+    cJSON_AddItemToObject(root, "data", data_array);
+    cJSON_AddNumberToObject(root, "type", type);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int Read_Modbus_Rtu_Input_Status(int address,int device,int num,int type){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "read_modbus_rtu_input_status");
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "device", device);
+    cJSON_AddNumberToObject(root, "num", num);
+    cJSON_AddNumberToObject(root, "type", type);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Read_Modbus_Rtu_Holding_Registers(int address,int device,int num,int type){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "read_modbus_rtu_holding_registers");
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "device", device);
+    cJSON_AddNumberToObject(root, "num", num);
+    cJSON_AddNumberToObject(root, "type", type);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Write_Modbus_Rtu_Registers(int address,std::vector<int> rtu_data,int type,int device){
+    cJSON *root,*data_array;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "write_modbus_rtu_registers");
+    cJSON_AddNumberToObject(root, "address", address);
+    data_array = cJSON_CreateArray();
+    for (int val : rtu_data) {
+        cJSON_AddItemToArray(data_array, cJSON_CreateNumber(val));
+    }
+    cJSON_AddItemToObject(root, "data", data_array);
+    cJSON_AddNumberToObject(root, "type", type);
+    cJSON_AddNumberToObject(root, "device", device);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Read_Modbus_Rtu_Input_Registers(int address,int device,int num,int type){
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "read_modbus_rtu_input_registers");
+    cJSON_AddNumberToObject(root, "address", address);
+    cJSON_AddNumberToObject(root, "device", device);
+    cJSON_AddNumberToObject(root, "num", num);
+    cJSON_AddNumberToObject(root, "type", type);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
 //查询机械臂当前状态
 int Parser_Arm_Current_State(char *msg)
 {
@@ -6003,6 +6950,358 @@ int Parser_Udp_Msg(char *msg)
     return 5;    
 }
 
+int Parser_Trajectory_List(char *msg)
+{
+    cJSON *root = NULL, *result, *list;
+    root = cJSON_Parse(msg);
+
+    if (root == NULL)
+    {
+        cJSON_Delete(root);
+        return 2;
+    }
+    trajectory_list = rm_msgs::Trajectorylist();
+    result = cJSON_GetObjectItem(root, "page_num");
+    if (result != NULL && result->type == cJSON_Number)
+    {
+        trajectory_list.page_num = result->valueint;
+
+        result = cJSON_GetObjectItem(root, "page_size");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            trajectory_list.page_size = result->valueint;
+        }
+
+        result = cJSON_GetObjectItem(root, "total_size");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            trajectory_list.total_size = result->valueint;
+        }
+
+        result = cJSON_GetObjectItem(root, "vague_search");
+        if (result != NULL && result->type == cJSON_String)
+        {
+            trajectory_list.vague_search = result->valuestring;
+        }
+        
+        list = cJSON_GetObjectItem(root, "list");
+        if (list != NULL) {
+            int array_size = cJSON_GetArraySize(list);
+            for (int i = 0; i < array_size; i++) {
+                cJSON* item = cJSON_GetArrayItem(list, i);
+                cJSON* time = cJSON_GetObjectItem(item, "create_time");
+                cJSON* name = cJSON_GetObjectItem(item, "name");
+                cJSON* points = cJSON_GetObjectItem(item, "point_num");
+                
+                if (time && name && points) {
+                    rm_msgs::Trajectoryinfo trajectory_info;
+                    trajectory_info.create_time = time->valuestring;
+                    trajectory_info.name = name->valuestring;
+                    trajectory_info.point_num = points->valueint;
+                    trajectory_list.tra_list.push_back(trajectory_info);
+                }
+            }
+        }
+        cJSON_Delete(root);
+        return 0;
+    }
+    else
+        return 3;
+}
+
+int Parser_Flowchart_Runstate(char *msg)
+{
+    cJSON *root = NULL, *result;
+    root = cJSON_Parse(msg);
+    if (root == NULL)
+    {
+        cJSON_Delete(root);
+        return 2;
+    }
+    result = cJSON_GetObjectItem(root, "run_state");
+    if (result != NULL && result->type == cJSON_Number)
+    {
+        flowchart_runstate.run_state = result->valueint;
+        result = cJSON_GetObjectItem(root, "id");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            flowchart_runstate.id = result->valueint;
+        }
+        result = cJSON_GetObjectItem(root, "name");
+        if (result != NULL && result->type == cJSON_String)
+        {
+            flowchart_runstate.name= result->valuestring;
+            ROS_INFO("当前使能的流程图编程文件名称: %s", flowchart_runstate.name.data());
+        }
+        result = cJSON_GetObjectItem(root, "plan_speed");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            flowchart_runstate.plan_speed = result->valueint;
+        }
+        result = cJSON_GetObjectItem(root, "step_mode");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            flowchart_runstate.step_mode = result->valueint;
+        }
+        result = cJSON_GetObjectItem(root, "modal_id");
+        if (result != NULL && result->type == cJSON_String)
+        {
+            flowchart_runstate.modal_id = result->valuestring;
+        }
+        cJSON_Delete(root);
+        return 0;
+    }
+    else
+        return 3;
+}
+
+int Parser_Arm_Software_Info(char *msg)
+{
+    cJSON *root = NULL, *result;
+    root = cJSON_Parse(msg);
+    if (root == NULL)
+    {
+        cJSON_Delete(root);
+        return 2;
+    }
+    // std::cout << "Parser_Arm_Software_Info!" << std::endl;
+    result = cJSON_GetObjectItem(root, "robot_controller_version");
+    if (result != NULL && result->type == cJSON_String)
+    {
+        if(strcmp(result->valuestring, "4.0") == 0){
+            arm_version.controller_version = result->valuestring;
+            result = cJSON_GetObjectItem(root, "Product_version");
+            if (result != NULL && result->type == cJSON_String)
+            {
+                arm_version.product_version = result->valuestring;
+            }
+            result = cJSON_GetObjectItem(root, "algorithm_info");
+            if (result != NULL && result->type == cJSON_Object)
+            {
+                cJSON *version = cJSON_GetObjectItem(result, "version");
+                if (version != NULL && version->type == cJSON_String)
+                    arm_version.algorithm_info= version->valuestring;
+            }
+            result = cJSON_GetObjectItem(root, "communication_info");
+            if (result != NULL && result->type == cJSON_Object)
+            {
+                cJSON *buildinfo = cJSON_GetObjectItem(result, "build_time");
+                if (buildinfo != NULL && buildinfo->type == cJSON_String)
+                    arm_version.com_info.build_time = buildinfo->valuestring;
+                buildinfo = cJSON_GetObjectItem(result, "version");
+                if (buildinfo != NULL && buildinfo->type == cJSON_String)
+                    arm_version.com_info.version = buildinfo->valuestring;
+            }
+            result = cJSON_GetObjectItem(root, "ctrl_info");
+            if (result != NULL && result->type == cJSON_Object)
+            {
+                cJSON *buildinfo = cJSON_GetObjectItem(result, "build_time");
+                if (buildinfo != NULL && buildinfo->type == cJSON_String)
+                    arm_version.ctrl_info.build_time = buildinfo->valuestring;
+                buildinfo = cJSON_GetObjectItem(result, "version");
+                if (buildinfo != NULL && buildinfo->type == cJSON_String)
+                    arm_version.ctrl_info.version = buildinfo->valuestring;
+            }
+            result = cJSON_GetObjectItem(root, "program_info");
+            if (result != NULL && result->type == cJSON_Object)
+            {
+                cJSON *buildinfo = cJSON_GetObjectItem(result, "build_time");
+                if (buildinfo != NULL && buildinfo->type == cJSON_String)
+                    arm_version.program_info.build_time = buildinfo->valuestring;
+                buildinfo = cJSON_GetObjectItem(result, "version");
+                if (buildinfo != NULL && buildinfo->type == cJSON_String)
+                    arm_version.program_info.version = buildinfo->valuestring;
+            }
+        }
+        cJSON_Delete(root);
+        return 0;
+    }
+    result = cJSON_GetObjectItem(root, "plan_info");
+    if (result != NULL && result->type == cJSON_Object)
+    {
+        cJSON *buildinfo = cJSON_GetObjectItem(result, "build_time");
+        if (buildinfo != NULL && buildinfo->type == cJSON_String)
+            arm_version.plan_info.build_time = buildinfo->valuestring;
+        buildinfo = cJSON_GetObjectItem(result, "version");
+        if (buildinfo != NULL && buildinfo->type == cJSON_String)
+            arm_version.plan_info.version = buildinfo->valuestring;
+        result = cJSON_GetObjectItem(root, "ctrl_info");
+        if (result != NULL && result->type == cJSON_Object)
+        {
+            cJSON *buildinfo = cJSON_GetObjectItem(result, "build_time");
+            if (buildinfo != NULL && buildinfo->type == cJSON_String)
+                arm_version.ctrl_info.build_time = buildinfo->valuestring;
+            buildinfo = cJSON_GetObjectItem(result, "version");
+            if (buildinfo != NULL && buildinfo->type == cJSON_String)
+                arm_version.ctrl_info.version = buildinfo->valuestring;
+        }
+        result = cJSON_GetObjectItem(root, "Product_version");
+        if (result != NULL && result->type == cJSON_String)
+        {
+            arm_version.product_version = result->valuestring;
+        }
+        result = cJSON_GetObjectItem(root, "algorithm_info");
+        if (result != NULL && result->type == cJSON_Object)
+        {
+            cJSON *version = cJSON_GetObjectItem(result, "version");
+            if (version != NULL && version->type == cJSON_String)
+            arm_version.algorithm_info= version->valuestring;
+        }
+        result = cJSON_GetObjectItem(root, "dynamic_info");
+        if (result != NULL && result->type == cJSON_Object)
+        {
+            cJSON *version = cJSON_GetObjectItem(result, "model_version");
+            if (version != NULL && version->type == cJSON_String)
+            arm_version.algorithm_info= version->valuestring;
+        }
+        cJSON_Delete(root);
+        return 0;
+    }
+    else
+        return 3;
+}
+
+int Parser_Get_Modbus_Tcp_Master(char *msg)
+{
+    cJSON *root = NULL, *result;
+    root = cJSON_Parse(msg);
+    if (root == NULL)
+    {
+        cJSON_Delete(root);
+        return 2;
+    }
+    result = cJSON_GetObjectItem(root, "master_name");
+    if (result != NULL && result->type == cJSON_String)
+    {
+        modbustcp_master_info.master_name = result->valuestring;
+        result = cJSON_GetObjectItem(root, "ip");
+        if (result != NULL && result->type == cJSON_String)
+        {
+            modbustcp_master_info.ip= result->valuestring;
+        }
+        result = cJSON_GetObjectItem(root, "port");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            modbustcp_master_info.port = result->valueint;
+        }
+        cJSON_Delete(root);
+        return 0;
+    }
+    else
+        return 3;
+}
+
+int Parser_Get_Modbus_Tcp_Master_List(char *msg)
+{
+    cJSON *root = NULL, *result, *json_sub;
+    root = cJSON_Parse(msg);
+    // // 遍历数组元素
+    // for (auto& info : modbustcp_master_list.master_list) {
+    //     info.master_name.clear();  
+    //     info.ip.clear();
+    //     info.port = 0;
+    // }
+    modbustcp_master_list = rm_msgs::Modbustcpmasterlist();
+    if (root == NULL)
+    {
+        cJSON_Delete(root);
+        return 2;
+    }
+    result = cJSON_GetObjectItem(root, "list");
+    if (result != NULL && result->type == cJSON_Array)
+    {
+        int size = cJSON_GetArraySize(result);
+        for (int i = 0; i < size; i++) {
+            cJSON* master_item = cJSON_GetArrayItem(result, i);
+            rm_msgs::Modbustcpmasterinfo info;
+            cJSON* ip_JSON = cJSON_GetObjectItem(master_item, "ip");
+            cJSON* mn_JSON = cJSON_GetObjectItem(master_item, "master_name");
+            cJSON* port_JSON = cJSON_GetObjectItem(master_item, "port");
+            if(ip_JSON!=NULL && ip_JSON->type == cJSON_String)
+                info.ip = ip_JSON->valuestring;
+            if(mn_JSON!=NULL && mn_JSON->type == cJSON_String)
+                info.master_name = mn_JSON->valuestring;
+            if(port_JSON!=NULL && port_JSON->type == cJSON_Number)
+                info.port = port_JSON->valueint;
+            modbustcp_master_list.master_list.push_back(info);
+        }
+        cJSON_Delete(root);
+        return 0;
+    }
+    else
+        return 3;
+}
+int Parser_Controller_Rs485_Mode_V4(char *msg)
+{
+    cJSON *root = NULL, *result, *json_sub;
+    root = cJSON_Parse(msg);
+    if (root == NULL)
+    {
+        cJSON_Delete(root);
+        return 2;
+    }
+    result = cJSON_GetObjectItem(root, "controller_rs485_mode");
+    if (result != NULL && result->type == cJSON_Number)
+    {
+        get_modbus_mode.mode = result->valueint;
+        result = cJSON_GetObjectItem(root, "baudrate");
+        if(result!=NULL && result->type == cJSON_Number)
+            get_modbus_mode.baudrate = result->valueint;
+        cJSON_Delete(root);
+        return 0;
+    }
+    else
+        return 3;
+}
+int Parser_Tool_Rs485_Mode_V4(char *msg)
+{
+    cJSON *root = NULL, *result, *json_sub;
+    root = cJSON_Parse(msg);
+    if (root == NULL)
+    {
+        cJSON_Delete(root);
+        return 2;
+    }
+    result = cJSON_GetObjectItem(root, "tool_rs485_mode");
+    if (result != NULL && result->type == cJSON_Number)
+    {
+        get_modbus_mode.mode = result->valueint;
+        result = cJSON_GetObjectItem(root, "baudrate");
+        if(result!=NULL && result->type == cJSON_Number)
+            get_modbus_mode.baudrate = result->valueint;
+        cJSON_Delete(root);
+        return 0;
+    }
+    else
+        return 3;
+}
+
+int Parser_Modbus_Data(char *msg)
+{
+    cJSON *root = NULL, *result, *json_sub;
+    root = cJSON_Parse(msg);
+    read_modbus_data.data.clear();
+    if (root == NULL)
+    {
+        cJSON_Delete(root);
+        return 2;
+    }
+    result = cJSON_GetObjectItem(root, "data");
+    if (result != NULL && result->type == cJSON_Array)
+    {
+        int size = cJSON_GetArraySize(result);
+        for (int i = 0; i < size; i++) {
+            cJSON* data_item = cJSON_GetArrayItem(result, i);
+            if(data_item!=NULL && data_item->type == cJSON_Number)
+                read_modbus_data.data.push_back(data_item->valueint);
+        }
+        read_modbus_data.state = true;
+        cJSON_Delete(root);
+        return 0;
+    }
+    else
+        return 3;
+}
 
 int Parser_Msg(char *msg)
 {
@@ -6079,7 +7378,17 @@ int Parser_Msg(char *msg)
         json_state = cJSON_GetObjectItem(root, "Product_version");
         if(json_state != NULL) {
             CONTROLLER_VERSION = 2;
-            
+            res = Parser_Arm_Software_Info(msg);
+            if (res == 0)
+            {
+                cJSON_Delete(root);
+                return CTRL_VERSION;
+            }
+            else
+            {
+                cJSON_Delete(root);
+                return -10;
+            }
             // 2为带UDP反馈版本控制器
 
         } else {
@@ -6087,8 +7396,22 @@ int Parser_Msg(char *msg)
             // 1为不带UDP反馈版本控制器
             // 0为版本号解析失败
         }
-        cJSON_Delete(root);
-        return CTRL_VERSION;
+        json_state = cJSON_GetObjectItem(root, "robot_controller_version");
+        if (json_state != NULL)
+        {
+            CONTROLLER_VERSION = 2;
+            res = Parser_Arm_Software_Info(msg);
+            if (res == 0)
+            {
+                cJSON_Delete(root);
+                return CTRL_VERSION;
+            }
+            else
+            {
+                cJSON_Delete(root);
+                return -10;
+            }
+        }
     }    
     
     json_state = cJSON_GetObjectItem(root, "joint");
@@ -6194,7 +7517,41 @@ int Parser_Msg(char *msg)
                 return -3;
             }
         }
-
+        if (json_state->type == cJSON_String && !strcmp("joint_software_version", json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "version");
+            if (json_state != NULL && json_state->type == cJSON_Array)
+            {
+                int size = cJSON_GetArraySize(json_state);
+                //std::cout << "cJSON_GetArraySize:" << size << std::endl;
+                for (int i = 0; i < size; i++)
+                {
+                    cJSON *json_sub = cJSON_GetArrayItem(json_state, i);
+                    if(json_sub!=NULL && json_sub->type == cJSON_String)
+                        joint_software_version.joint_version[i] = json_sub->valuestring;
+                        //std::cout << "joint_software_version.joint_version[0]: " << joint_software_version.joint_version[i] << std::endl;
+                }
+                return JOINT_VERSION;
+            }
+            else
+            {
+                cJSON_Delete(root);
+                return -10;
+            }
+        }
+        if (json_state->type == cJSON_String && !strcmp("tool_software_version", json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "version");
+            if (json_state != NULL && json_state->type == cJSON_String){
+                tool_software_version.data = json_state->valuestring;
+                return TOOL_VERSION;
+            }
+            else
+            {
+                cJSON_Delete(root);
+                return -10;
+            }
+        }
         // Test
         if (json_state->type == cJSON_String && !strcmp("total_work_frame", json_state->valuestring))
         {
@@ -7379,6 +8736,636 @@ int Parser_Msg(char *msg)
                 }
             }
         }
+        else if(!strcmp("set_arm_emergency_stop",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "set_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return SET_ARM_EMERGENCY_STOP;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return SET_ARM_EMERGENCY_STOP;
+                }
+            }
+        }
+        else if(!strcmp("get_trajectory_file_list",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "page_num");
+            if (json_state != NULL)
+            {
+                res = Parser_Trajectory_List(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    return GET_TRAJECTORY_FILE_LIST;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("set_run_trajectory_file",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "run_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return SET_RUN_TRAJECTORY;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return SET_RUN_TRAJECTORY;
+                }
+            }
+        }
+        else if(!strcmp("delete_trajectory_file",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "delete_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return DELETE_TRAJECTORY_FILE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return DELETE_TRAJECTORY_FILE;
+                }
+            }
+        }
+        else if(!strcmp("save_trajectory_file",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "save_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return SAVE_TRAJECTORY_FILE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return SAVE_TRAJECTORY_FILE;
+                }
+            }
+        }
+        else if(!strcmp("get_flowchart_program_run_state",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "id");
+            if (json_state != NULL)
+            {
+                res = Parser_Flowchart_Runstate(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    return GET_FLOWCHART_PROGRAM_RUN_STATE;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("movel_offset",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "receive_state");
+            if(json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return MOVEL_OFFSET;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return MOVEL_OFFSET;
+                }
+            }
+        }
+        else if(!strcmp("arm_software_info",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "robot_controller_version");
+            if (json_state != NULL)
+            {
+                res = Parser_Arm_Software_Info(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    return ARM_VERSION;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("add_modbus_tcp_master",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "add_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return ADD_MODBUS_TCP_MASTER;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return ADD_MODBUS_TCP_MASTER;
+                }
+            }
+        }
+        else if(!strcmp("update_modbus_tcp_master",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "update_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return UPDATE_MODBUS_TCP_MASTER;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return UPDATE_MODBUS_TCP_MASTER;
+                }
+            }
+        }
+        else if(!strcmp("delete_modbus_tcp_master",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "delete_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return DELETE_MODBUS_TCP_MASTER;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return DELETE_MODBUS_TCP_MASTER;
+                }
+            }
+        }
+        else if(!strcmp("given_modbus_tcp_master",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "ip");
+            if (json_state != NULL)
+            {
+                res = Parser_Get_Modbus_Tcp_Master(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    return GET_MODBUS_TCP_MASTER;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("get_modbus_tcp_master_list",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "list");
+            if (json_state != NULL)
+            {
+                res = Parser_Get_Modbus_Tcp_Master_List(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    return GET_MODBUS_TCP_MASTER_LIST;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("set_controller_rs485_mode",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "set_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return SET_CONTROLLER_RS485_MODE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return SET_CONTROLLER_RS485_MODE;
+                }
+            }
+        }
+        else if(!strcmp("get_controller_rs485_mode",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "controller_rs485_mode");
+            if (json_state != NULL)
+            {
+                res = Parser_Controller_Rs485_Mode_V4(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    return GET_CONTROLLER_RS485_MODE_V4;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("set_tool_rs485_mode",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "set_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return SET_TOOL_RS485_MODE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return SET_TOOL_RS485_MODE;
+                }
+            }
+        }
+        else if(!strcmp("get_tool_rs485_mode",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "tool_rs485_mode");
+            if (json_state != NULL)
+            {
+                res = Parser_Tool_Rs485_Mode_V4(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    return GET_TOOL_RS485_MODE_V4;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("read_modbus_tcp_coils",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if (json_state != NULL&&json_state->type==cJSON_False)
+            {
+                read_modbus_data.state = false;
+                read_modbus_data.data.clear();
+                Modbus_Read_Case = 1;
+                return MODBUS_READ;
+                
+
+            }
+            json_state = cJSON_GetObjectItem(root, "data");
+            if (json_state != NULL)
+            {
+                res = Parser_Modbus_Data(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    Modbus_Read_Case = 1;
+                    return MODBUS_READ;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("read_modbus_tcp_input_status",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if (json_state != NULL&&json_state->type==cJSON_False)
+            {
+                read_modbus_data.state = false;
+                read_modbus_data.data.clear();
+                Modbus_Read_Case = 2;
+                return MODBUS_READ;
+            }
+            json_state = cJSON_GetObjectItem(root, "data");
+            if (json_state != NULL)
+            {
+                res = Parser_Modbus_Data(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    Modbus_Read_Case = 2;
+                    return MODBUS_READ;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("read_modbus_tcp_holding_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if (json_state != NULL&&json_state->type==cJSON_False)
+            {
+                read_modbus_data.state = false;
+                read_modbus_data.data.clear();
+                Modbus_Read_Case = 3;
+                return MODBUS_READ;
+            }
+            json_state = cJSON_GetObjectItem(root, "data");
+            if (json_state != NULL)
+            {
+                res = Parser_Modbus_Data(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    Modbus_Read_Case = 3;
+                    return MODBUS_READ;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("read_modbus_tcp_input_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if (json_state != NULL&&json_state->type==cJSON_False)
+            {
+                read_modbus_data.state = false;
+                read_modbus_data.data.clear();
+                Modbus_Read_Case = 4;
+                return MODBUS_READ;
+            }
+            json_state = cJSON_GetObjectItem(root, "data");
+            if (json_state != NULL)
+            {
+                res = Parser_Modbus_Data(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    Modbus_Read_Case = 4;
+                    return MODBUS_READ;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("write_modbus_rtu_coils",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "write_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    Modbus_Write_Case = 1;
+                    return MODBUS_WRITE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    Modbus_Write_Case = 1;
+                    return MODBUS_WRITE;
+                    
+                }
+            }
+        }
+        else if(!strcmp("write_modbus_rtu_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "write_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    Modbus_Write_Case = 2;
+                    return MODBUS_WRITE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    Modbus_Write_Case = 2;
+                    return MODBUS_WRITE;
+                    
+                }
+            }
+        }
+        else if(!strcmp("write_modbus_tcp_coils",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "write_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    Modbus_Write_Case = 1;
+                    return MODBUS_WRITE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    Modbus_Write_Case = 1;
+                    return MODBUS_WRITE;
+                }
+            }
+        }
+        else if(!strcmp("write_modbus_tcp_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "write_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    Modbus_Write_Case = 2;
+                    return MODBUS_WRITE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    Modbus_Write_Case = 2;
+                    return MODBUS_WRITE;
+                }
+            }
+        }
+        // -----------------------------------------
+        else if(!strcmp("read_modbus_rtu_coils",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if (json_state != NULL&&json_state->type==cJSON_False)
+            {
+                read_modbus_data.state = false;
+                read_modbus_data.data.clear();
+                Modbus_Read_Case = 1;
+                return MODBUS_READ;
+            }
+            json_state = cJSON_GetObjectItem(root, "data");
+            if (json_state != NULL)
+            {
+                res = Parser_Modbus_Data(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    Modbus_Read_Case = 1;
+                    return MODBUS_READ;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("read_modbus_rtu_input_status",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if (json_state != NULL&&json_state->type==cJSON_False)
+            {
+                read_modbus_data.state = false;
+                read_modbus_data.data.clear();
+                Modbus_Read_Case = 2;
+                return MODBUS_READ;
+            }
+            json_state = cJSON_GetObjectItem(root, "data");
+            if (json_state != NULL)
+            {
+                res = Parser_Modbus_Data(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    Modbus_Read_Case = 2;
+                    return MODBUS_READ;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("read_modbus_rtu_holding_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if (json_state != NULL&&json_state->type==cJSON_False)
+            {
+                read_modbus_data.state = false;
+                read_modbus_data.data.clear();
+                Modbus_Read_Case = 3;
+                return MODBUS_READ;
+            }
+            json_state = cJSON_GetObjectItem(root, "data");
+            if (json_state != NULL)
+            {
+                res = Parser_Modbus_Data(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    Modbus_Read_Case = 3;
+                    return MODBUS_READ;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("read_modbus_rtu_input_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "read_state");
+            if (json_state != NULL&&json_state->type==cJSON_False)
+            {
+                read_modbus_data.state = false;
+                read_modbus_data.data.clear();
+                Modbus_Read_Case = 4;
+                return MODBUS_READ;
+            }
+            json_state = cJSON_GetObjectItem(root, "data");
+            if (json_state != NULL)
+            {
+                res = Parser_Modbus_Data(msg);
+                if (res == 0)
+                {
+                    cJSON_Delete(root);
+                    Modbus_Read_Case = 4;
+                    return MODBUS_READ;
+                }
+                else
+                {
+                    cJSON_Delete(root);
+                    return -10;
+                }
+            }
+        }
+        else if(!strcmp("write_modbus_rtu_coils",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "write_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return MODBUS_WRITE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return MODBUS_WRITE;
+                }
+            }
+        }
+        else if(!strcmp("write_modbus_rtu_registers",json_state->valuestring))
+        {
+            json_state = cJSON_GetObjectItem(root, "write_state");
+            if (json_state != NULL)
+            {
+                if(json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return MODBUS_WRITE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return MODBUS_WRITE;
+                }
+            }
+        }
+
+
+
     }
 
     cJSON_Delete(root);

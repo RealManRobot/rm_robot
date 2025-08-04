@@ -53,8 +53,8 @@ find_package(catkin REQUIRED COMPONENTS
   FILES
   Arm_Analog_Output.msg
   Arm_Digital_Output.msg
-  Arm_Joint_Speed_Max.msg   ##
-  Arm_Software_Version.msg
+  Arm_Joint_Speed_Max.msg
+  Arm_Software_Version.msg   ##
  Arm_IO_State.msg
  JointPos.msg
  MoveC.msg
@@ -126,6 +126,25 @@ Err.msg
 Rm_Plus_Base.msg
 Rm_Plus_State.msg
 Write_Register.msg
+Softwarebuildinfo.msg
+Moveloffset.msg
+Trajectoryinfo.msg
+Trajectorylist.msg
+Gettrajectorylist.msg
+Programrunstate.msg
+Flowchartrunstate.msg
+Jointversion.msg
+Mastername.msg
+Modbusreaddata.msg
+Modbustcpmasterinfo.msg
+Modbustcpmasterlist.msg
+UpdateTCPmasterparam.msg
+Get_TCP_Master_List_Param.msg
+RS485params.msg
+Read_TCPandRTU.msg
+Write_TCPandRTU.msg
+Read_ModbusRTU.msg
+Write_ModbusRTU.msg
 )
 
 ## Generate services in the 'srv' folder
