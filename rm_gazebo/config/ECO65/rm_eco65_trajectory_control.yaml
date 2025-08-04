@@ -16,4 +16,3 @@ arm:
       joint4:   {p: 1000.0, i: 0.0, d: 0.1, i_clamp: 0.0}
       joint5:   {p: 1000.0, i: 0.0, d: 0.1, i_clamp: 0.0}
       joint6:   {p: 1000.0, i: 0.0, d: 0.1, i_clamp: 0.0}
-

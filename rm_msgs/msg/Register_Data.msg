@@ -1,2 +1,2 @@
-uint16[] data
 bool state
+uint16[] data

@@ -1,6 +1,6 @@
 # RealMan Robot
 
-* Version V2.4.0
+* Version V2.5.0
 * This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
 
 ### Installation from Source

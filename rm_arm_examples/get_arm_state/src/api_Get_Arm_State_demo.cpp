@@ -9,12 +9,23 @@
 #include <rm_msgs/Arm_Software_Version.h>
 #include <std_msgs/Empty.h>
 
-
-void Get_Arm_Software_Version_Callback(const rm_msgs::Arm_Software_Version msg)
+void Get_Arm_Software_version_Callback(const rm_msgs::Arm_Software_Version msg)
 {
-    ROS_INFO("Product_version is %s", msg.Product_version.c_str());
-    ROS_INFO("Plan_version is %s", msg.Plan_version.c_str());
+    ROS_INFO("Product_version is: %s", msg.product_version.c_str());
+    ROS_INFO("controller_version is: %s", msg.controller_version.c_str());
+    ROS_INFO("algorithm_info is: %s", msg.algorithm_info.c_str());
+    ROS_INFO("ctrl_info build_time is: %s", msg.ctrl_info.build_time.c_str());
+    ROS_INFO("ctrl_info version is: %s", msg.ctrl_info.version.c_str());
+    ROS_INFO("com_info build_time is: %s", msg.com_info.build_time.c_str());
+    ROS_INFO("com_info version is: %s", msg.com_info.version.c_str());
+    ROS_INFO("program_info build_time is: %s", msg.program_info.build_time.c_str());
+    ROS_INFO("program_info version is: %s", msg.program_info.version.c_str());
+        
+    ROS_INFO("dynamic_info is: %s", msg.dynamic_info.c_str());
+    ROS_INFO("plan_info build_time is: %s", msg.plan_info.build_time.c_str());
+    ROS_INFO("plan_info version is: %s", msg.plan_info.version.c_str());
 }
+
 
 // 接收到订阅的机械臂执行状态消息后，会进入消息回调函数
 void GetArmState_Callback(const rm_msgs::Arm_Current_State msg)
@@ -114,9 +125,8 @@ int main(int argc, char** argv)
     /*
      * 1.相关初始化
      */
-
     // 获取机械臂当前版本指令
-    ros::Publisher test_Get_Arm_Software_Version_pub = nh.advertise<std_msgs::Empty>("/rm_driver/Get_Arm_Software_Version", 10);
+    ros::Publisher test_Get_Arm_Software_Version_pub = nh.advertise<std_msgs::Empty>("/rm_driver/Get_Arm_Software_Version_Cmd", 10);
 
     // 获取机械臂当前状态指令
     ros::Publisher test_Get_Arm_Base_State_pub = nh.advertise<rm_msgs::GetArmState_Command>("/rm_driver/GetArmState_Cmd", 10);
@@ -124,9 +134,10 @@ int main(int argc, char** argv)
     // 获取机械臂六维力指令
     ros::Publisher test_Get_Arm_Six_Force_pub = nh.advertise<std_msgs::Empty>("/rm_driver/GetSixForce_Cmd", 10);
 
-    // 订阅机械臂版本信息
-    ros::Subscriber Arm_Software_Version_sub = nh.subscribe("/rm_driver/Get_Arm_Software_Version_Result", 10, Get_Arm_Software_Version_Callback);
 
+
+    // 等待版本信息更新
+    ros::Subscriber Arm_Software_Version_sub = nh.subscribe("/rm_driver/Get_Arm_Software_Version_Result", 10, Get_Arm_Software_version_Callback);
     // 订阅机械臂当前状态指令(角度+欧拉角)
     ros::Subscriber Arm_Base_State_sub = nh.subscribe("/rm_driver/ArmCurrentState", 10, Get_Arm_State_Callback);
 
