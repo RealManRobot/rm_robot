@@ -1,0 +1,20 @@
+<launch>
+  
+    <arg name="rvizconfig" default="$(find rm_gazebo)/config/GEN72/rviz_gazebo.rviz"/>
+
+    <!-- Launch Gazebo  -->
+    <include file="$(find rm_gazebo)/launch/GEN72/arm_world_II.launch" />
+
+    <!-- ros_control arm launch file -->
+    <include file="$(find rm_gazebo)/launch/GEN72/arm_gazebo_states.launch" />   
+
+    <!-- ros_control trajectory control dof arm launch file -->
+    <include file="$(find rm_gazebo)/launch/GEN72/arm_gen72_trajectory_controller.launch" />
+
+    <!-- moveit launch file -->
+    <include file="$(find rm_gen72_moveit_config)/launch/moveit_planning_execution.launch" >
+        <arg name="rviz_gazebo_config" value="$(arg rvizconfig)" />
+        <arg name="arm_type" value="true" />
+    </include>
+
+</launch>

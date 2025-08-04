@@ -1,8 +1,6 @@
 # RealMan Robot
 
-* Version V2.3.0
-* All projects in this repository only support mechanical arms that have been upgraded to the third-generation controller version for reference use.
-* Currently supports the standard and 6-DoF versions of the RM65 series, RM75 series, RML63 series, ECO63 series, ECO65 series, and GEN72 series robotic arms, but does not support the vision version.
+* Version V2.5.0
 * This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
 
 ### Installation from Source
@@ -35,7 +33,8 @@ source ~/catkin_workspace/devel/setup.bash
 You can use MoveIt! to control the simulated robot like ***RVIZ*** ,***Gazebo*** or ***VREP*** environment.
 
 **Use MoveIt in RVIZ to control the simulated robot in Gazebo:**
-* ***CAUTION:*** Before running, you need to modify rm_<arm_type>_moveit_config/launch/rm_<arm_type>_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.
+* ***CAUTION:*** Before running, you need to modify rm_<arm_type>_moveit_config/launch/rm_<arm_type>_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.like this 
+![image](rm_doc/image/gazebo_change.png)
 ```  
 roslaunch rm_gazebo arm_<arm_type>_bringup_moveit.launch
 ```
@@ -69,7 +68,7 @@ roslaunch rm_control rm_<arm_type>_control.launch
 ```
 roslaunch rm_bringup rm_<arm_type>_robot.launch
 ```
-<arm_type> : 65、65_6f、75、75_6f、63、63_6f、eco63、eco65、eco65_6f、gen72
+<arm_type> : 65、65_6f、75、75_6f、63、63_6f、eco63、eco65、eco65_6f、gen72、gen72_II
 
 * Select `"Interact"` in rviz and move the end-effector to a new goal.
 

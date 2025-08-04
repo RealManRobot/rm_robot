@@ -1,0 +1,3 @@
+int32 page_num
+int32 page_size
+string vague_search

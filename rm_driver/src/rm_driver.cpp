@@ -8,6 +8,7 @@ ros::CallbackQueue queue_forcePositionMove;
 
 bool joint_flag = false;
 
+
 void SetToolVoltage_Callback(const std_msgs::Byte msg)
 {
     int res = 0;
@@ -31,7 +32,7 @@ void SetHandPosture_Callback(const rm_msgs::Hand_Posture msg)
     uint16_t posture_num = msg.posture_num;
     ROS_INFO("recv SetHandPosture message[posture_num:%d]\r\n", posture_num);
     int res = 0;
-    res = SetHandPostureCmd(posture_num);
+    res = SetHandPostureCmd(posture_num,msg.block);
     if (res == 0)
     {
         ROS_INFO("send SetHandPosture cmd success!\n");
@@ -49,7 +50,7 @@ void SetHandSeq_Callback(const rm_msgs::Hand_Seq msg)
     uint16_t seq_num = msg.seq_num;
     ROS_INFO("recv SetHandSeq message[seq_num:%d]\r\n", seq_num);
     int res = 0;
-    res = SetHandSeqCmd(seq_num);
+    res = SetHandSeqCmd(seq_num,msg.block);
     if (res == 0)
     {
         ROS_INFO("send SetHandSeq cmd success!\n");
@@ -146,7 +147,7 @@ void SetHandAngle_Callback(const rm_msgs::Hand_Angle msg)
         hand_angle[i] = msg.hand_angle[i];
     }
 
-    res = SetHandAngle(hand_angle);
+    res = SetHandAngle(hand_angle,msg.block);
 
     if (res == 0)
     {
@@ -536,25 +537,45 @@ void GetCurrentArmState_Callback(const std_msgs::Empty msg)
  开启透传力位混合控制补偿模式、透传力位混合补偿（角度）、透传力位混合补偿（位姿）、关闭透传力位混合控制补偿模式
  * *********************************************************************************/
 //开始复合模式拖动示教
+// old version
+// void StartMultiDragTeach_Callback(const rm_msgs::Start_Multi_Drag_Teach msg)
+// {
+//     startMulitiDragTeach = true;
+//     int res = 0;
+//     if ((msg.mode >= 0) && (msg.mode < 4))
+//     {
+//         res = Start_Multi_Drag_Teach_Cmd(msg.mode);
+//         if (res == 0)
+//         {
+//             ROS_INFO("Start Multi Drag Teach success!\n");
+//         }
+//         else
+//         {
+//             ROS_ERROR("Start Multi Drag Teach failed!\n");
+//         }
+//     }
+//     else
+//     {
+//         ROS_ERROR("Multi Drag Teach mode wrong!\n");
+//     }
+// }
+// new version
 void StartMultiDragTeach_Callback(const rm_msgs::Start_Multi_Drag_Teach msg)
 {
     startMulitiDragTeach = true;
     int res = 0;
-    if ((msg.mode >= 0) && (msg.mode < 4))
+    int free_axes[6];
+    for(int i=0;i<6;i++){
+        free_axes[i] = msg.free_axes[i];
+    }
+    res = Start_Multi_Drag_Teach_Cmd(free_axes,msg.frame,msg.singular_wall);
+    if (res == 0)
     {
-        res = Start_Multi_Drag_Teach_Cmd(msg.mode);
-        if (res == 0)
-        {
-            ROS_INFO("Start Multi Drag Teach success!\n");
-        }
-        else
-        {
-            ROS_ERROR("Start Multi Drag Teach failed!\n");
-        }
+        ROS_INFO("Start Multi Drag Teach success!\n");
     }
     else
-    {
-        ROS_ERROR("Multi Drag Teach mode wrong!\n");
+    {   
+        ROS_ERROR("Start Multi Drag Teach failed!\n");
     }
 }
 
@@ -1245,6 +1266,7 @@ void getArmStateTimerSwitch_Callback(const std_msgs::Bool msg)
     }
 }
 
+
 // Update:2023-7-25 @HermanYe
 // Get controller version
 void Get_Arm_Software_Version_Callback(const std_msgs::Empty msg)
@@ -1254,10 +1276,451 @@ void Get_Arm_Software_Version_Callback(const std_msgs::Empty msg)
     res = Get_Arm_Software_Version();
     if(res != 0)
     {
-        ROS_ERROR("Get_Arm_Software_Version_Callback cmd failed!\n");
+        ROS_ERROR("Get_Arm_Software_Version cmd failed!\n");
+    }
+}
+void Get_Joint_Software_Version_Callback(const std_msgs::Empty msg)
+{
+    ROS_INFO("Get_Joint_Software_Version_Callback!\n");
+    int res = 0;
+    res = Get_Joint_Software_Version();
+    if(res == 0){
+        // ROS_INFO("Get_Joint_Software_Version_Callback success!\n");
+    }
+    else{
+        ROS_ERROR("Get_Joint_Software_Version cmd failed!\n");
+    }
+}
+void Get_Tool_Software_Version_Callback(const std_msgs::Empty msg)
+{
+    ROS_INFO("Get_Tool_Software_Version_Callback!\n");
+    int res = 0;
+    res = Get_Tool_Software_Version();
+    if(res == 0){
+        // ROS_INFO("Get_Tool_Software_Version success!\n");
+    }
+    else{
+        ROS_ERROR("Get_Tool_Software_Version cmd failed!\n");
     }
 }
 
+
+
+// ----------------------------------------------------------------------------
+// Update:2025-05-13 @Poppy
+// 四代控制器新增
+// void Get_Arm_Software_Version_Callback_v4(const std_msgs::Empty msg)
+// {
+//     ROS_INFO("Get_Arm_Software_Version_Callback!\n");
+//     int res = 0;
+//     res = Get_Arm_Software_Version();
+//     if(res != 0)
+//     {
+//         ROS_ERROR("Get_Arm_Software_Version_Callback cmd failed!\n");
+//     }
+// }
+
+// 设置机械臂急停状态
+void Set_Arm_Emergency_Stop_Callback(const std_msgs::Bool msg)
+{
+    ROS_INFO("Set_Arm_Emergency_Stop_Callback!\n");
+    int res = 0;
+    res = Parse_Set_Arm_Emergency_Stop(msg.data);
+    if(res == 0){
+        // ROS_INFO("Set_Arm_Emergency_Stop_Callback success!\n");
+    }
+    else{
+        ROS_ERROR("Set_Arm_Emergency_Stop_Callback cmd failed!\n");
+    }
+}
+
+void Get_Trajectory_File_List_Callback(const rm_msgs::Gettrajectorylist msg)
+{
+    ROS_INFO("Get_Trajectory_File_List_Callback!\n");
+    int res = 0;
+    res = Get_Trajectory_File_List(msg.page_num,msg.page_size,msg.vague_search.data());
+    if(res == 0){
+        // ROS_INFO("Get_Trajectory_File_List_Callback success!\n");
+    }
+    else{
+        ROS_ERROR("Get_Trajectory_File_List_Callback cmd failed!\n");
+    }
+}
+void Set_Run_Trajectory_Callback(const std_msgs::String msg)
+{
+    ROS_INFO("Set_Run_Trajectory_Callback!\n");
+    int res = 0;
+    res = Set_Run_Trajectory(msg.data);
+    if(res == 0){
+        // ROS_INFO("Set_Run_Trajectory success!\n");
+    }
+    else{
+        ROS_ERROR("Set_Run_Trajectory cmd failed!\n");
+    }
+}
+void Delete_Trajectory_File_Callback(const std_msgs::String msg)
+{
+    ROS_INFO("Delete_Trajectory_File_Callback!\n");
+    int res = 0;
+    res = Delete_Trajectory_File(msg.data);
+    if(res == 0){
+        // ROS_INFO("Delete_Trajectory_File success!\n");
+    }
+    else{
+        ROS_ERROR("Delete_Trajectory_File cmd failed!\n");
+    }
+}
+void Save_Trajectory_File_Callback(const std_msgs::String msg)
+{
+    ROS_INFO("Save_Trajectory_File_Callback!\n");
+    int res = 0;
+    res = Save_Trajectory_File(msg.data);
+    if(res == 0){
+        // ROS_INFO("Save_Trajectory_File success!\n");
+    }
+    else{
+        ROS_ERROR("Save_Trajectory_File cmd failed!\n");
+    }
+}
+
+void Get_Flowchart_Program_Run_State_Callback(const std_msgs::Empty msg)
+{
+    ROS_INFO("Get_Flowchart_Program_Run_State_Callback!\n");
+    int res = 0;
+    res = Get_Flowchart_Program_Run_State();
+    if(res == 0){
+        // ROS_INFO("Get_Flowchart_Program_Run_State success!\n");
+    }
+    else{
+        ROS_ERROR("Get_Flowchart_Program_Run_State cmd failed!\n");
+    }
+}
+
+void Movel_Offset_Callback(const rm_msgs::Moveloffset msg)
+{
+    ROS_INFO("Movel_Offset_Callback!\n");
+    int res = 0;
+    res = Movel_Offset(msg.offset, msg.speed, msg.r, msg.trajectory_connect, msg.frame_type, msg.block);
+    if(res == 0){
+        // ROS_INFO("Movel_Offset success!\n");
+    }
+    else{
+        ROS_ERROR("Movel_Offset cmd failed!\n");
+    }
+}
+
+
+
+// ----------------------------------ModbusTCP主站相关-------------------------------------
+void Add_Modbus_Tcp_Master_Callback(const rm_msgs::Modbustcpmasterinfo msg)
+{
+    ROS_INFO("Add_Modbus_Tcp_Master_Callback!\n");
+    int res = 0;
+    res = Add_Modbus_Tcp_Master(msg.master_name,msg.ip,msg.port);
+    if(res == 0){
+        // ROS_INFO("Movel_Offset success!\n");
+    }
+    else{
+        ROS_ERROR("Add_Modbus_Tcp_Master_Callback cmd failed!\n");
+    }
+}
+void Update_Modbus_Tcp_Master_Callback(const rm_msgs::UpdateTCPmasterparam msg)
+{
+    ROS_INFO("Update_Modbus_Tcp_Master_Callback!\n");
+    int res = 0;
+    res = Update_Modbus_Tcp_Master(msg.master_name,msg.new_name,msg.ip,msg.port);
+    if(res == 0){
+        // ROS_INFO("Movel_Offset success!\n");
+    }
+    else{
+        ROS_ERROR("Update_Modbus_Tcp_Master_Callback cmd failed!\n");
+    }
+}
+void Delete_Modbus_Tcp_Master_Callback(const std_msgs::String msg)
+{
+    ROS_INFO("Delete_Modbus_Tcp_Master_Callback!\n");
+    int res = 0;
+    res = Delete_Modbus_Tcp_Master(msg.data);
+    if(res == 0){
+        // ROS_INFO("Movel_Offset success!\n");
+    }
+    else{
+        ROS_ERROR("Delete_Modbus_Tcp_Master_Callback cmd failed!\n");
+    }
+}
+void Get_Modbus_Tcp_Master_Callback(const std_msgs::String msg)
+{
+    ROS_INFO("Get_Modbus_Tcp_Master_Callback!\n");
+    int res = 0;
+    res = Get_Modbus_Tcp_Master(msg.data);
+    if(res == 0){
+        // ROS_INFO("Movel_Offset success!\n");
+    }
+    else{
+        ROS_ERROR("Get_Modbus_Tcp_Master_Callback cmd failed!\n");
+    }
+}
+void Get_Modbus_Tcp_Master_List_Callback(const rm_msgs::Get_TCP_Master_List_Param msg)
+{
+    ROS_INFO("Get_Modbus_Tcp_Master_List_Callback!\n");
+    int res = 0;
+    res = Get_Modbus_Tcp_Master_List(msg.page_num,msg.page_size,msg.vague_search);
+    if(res == 0){
+        // ROS_INFO("Movel_Offset success!\n");
+    }
+    else{
+        ROS_ERROR("Get_Modbus_Tcp_Master_List_Callback cmd failed!\n");
+    }
+}
+
+
+void Set_Controller_Rs485_Mode_Callback(const rm_msgs::RS485params msg)
+{
+    ROS_INFO("Set_Controller_Rs485_Mode_Callback!\n");
+    int res = 0;
+    res = Set_Controller_Rs485_Mode(msg.mode,msg.baudrate);
+    if(res == 0){
+        // ROS_INFO("Movel_Offset success!\n");
+    }
+    else{
+        ROS_ERROR("Set_Controller_Rs485_Mode_Callback cmd failed!\n");
+    }
+}
+
+void Get_Controller_Rs485_Mode_V4_Callback(const std_msgs::Empty msg)
+{
+    ROS_INFO("Get_Controller_Rs485_Mode_V4_Callback!\n");
+    int res = 0;
+    res = Get_Controller_Rs485_Mode_V4();
+    if(res == 0){
+        // ROS_INFO("Movel_Offset success!\n");
+    }
+    else{
+        ROS_ERROR("Get_Controller_Rs485_Mode_V4_Callback cmd failed!\n");
+    }
+}
+void Set_Tool_Rs485_Mode_Callback(const rm_msgs::RS485params msg)
+{
+    ROS_INFO("Set_Tool_Rs485_Mode_Callback!\n");
+    int res = 0;
+    res = Set_Tool_Rs485_Mode(msg.mode,msg.baudrate);
+    if(res == 0){
+        ROS_INFO("Set_Tool_Rs485_Mode_Callback success!\n");
+    }
+    else{
+        ROS_ERROR("Set_Tool_Rs485_Mode_Callback cmd failed!\n");
+    }
+}
+void Get_Tool_Rs485_Mode_V4_Callback(const std_msgs::Empty msg)
+{
+    ROS_INFO("Get_Tool_Rs485_Mode_V4_Callback!\n");
+    int res = 0;
+    res = Get_Tool_Rs485_Mode_V4();
+    if(res == 0){
+        // ROS_INFO("Get_Tool_Rs485_Mode_V4_Callback success!\n");
+    }
+    else{
+        ROS_ERROR("Get_Tool_Rs485_Mode_V4_Callback cmd failed!\n");
+    }
+}
+
+//**********************************2025.6.17************************************** */
+void Read_Modbus_Coils_Callback(const rm_msgs::Read_TCPandRTU msg)
+{
+    if(msg.type == 3)
+    {   
+        ROS_INFO("Read_Modbus_Tcp_Coils_Callback!\n");
+        int res = 0;
+        res = Read_Modbus_Tcp_Coils(msg.address,msg.num,msg.ip,msg.port,msg.master_name);
+        if(res == 0){
+            //ROS_INFO("Read_Modbus_Tcp_Coils_Port_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Read_Modbus_Tcp_Coils_Callback cmd failed!\n");
+        }
+    }
+    else if(msg.type == 0 || msg.type == 1)
+    {
+        ROS_INFO("Read_Modbus_Rtu_Coils_Callback!\n");
+        int res = 0;
+        res = Read_Modbus_Rtu_Coils(msg.address,msg.device,msg.num,msg.type);
+        if(res == 0){
+            // ROS_INFO("Read_Modbus_Rtu_Coils_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Read_Modbus_Rtu_Coils_Callback cmd failed!\n");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Invalid Read_TCPandRTU message format! Missing required fields.\n");
+    }
+}
+
+void Write_Modbus_Coils_Callback(const rm_msgs::Write_TCPandRTU msg)
+{
+    if(msg.type == 3)
+    {
+        ROS_INFO("Write_Modbus_Tcp_Coils_Callback!\n");
+        int res = 0;
+        res = Write_Modbus_Tcp_Coils(msg.address,msg.data,msg.ip,msg.port,msg.master_name);
+        if(res == 0){
+            // ROS_INFO("Write_Modbus_Tcp_Coils_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Write_Modbus_Tcp_Coils_Callback cmd failed!\n");
+        }
+    }
+    else if(msg.type == 0 || msg.type == 1)
+    {
+        ROS_INFO("Write_Modbus_Rtu_Coils_Callback!\n");
+        int res = 0;
+        res = Write_Modbus_Rtu_Coils(msg.address,msg.data,msg.type,msg.device);
+        if(res == 0){
+            // ROS_INFO("Write_Modbus_Rtu_Coils_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Write_Modbus_Rtu_Coils_Callback cmd failed!\n");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Invalid Write_TCPandRTU message format! Missing required fields.\n");
+    }
+
+}
+
+void Read_Modbus_Input_Status_Callback(const rm_msgs::Read_TCPandRTU msg)
+{
+    if(msg.type == 3)
+    {
+        ROS_INFO("Read_Modbus_Tcp_Input_Status_Callback!\n");
+        int res = 0;
+        res = Read_Modbus_Tcp_Input_Status(msg.address,msg.num,msg.ip,msg.port,msg.master_name);
+        if(res == 0){
+            // ROS_INFO("Read_Modbus_Tcp_Input_Status_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Read_Modbus_Tcp_Input_Status_Callback cmd failed!\n");
+        }       
+    }
+    else if(msg.type == 0 || msg.type == 1)
+    {
+        ROS_INFO("Read_Modbus_Rtu_Input_Status_Callback!\n");
+        int res = 0;
+        res = Read_Modbus_Rtu_Input_Status(msg.address,msg.device,msg.num,msg.type);
+        if(res == 0){
+            // ROS_INFO("Read_Modbus_Rtu_Input_Status_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Read_Modbus_Rtu_Input_Status_Callback cmd failed!\n");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Invalid Read_TCPandRTU message format! Missing required fields.\n");
+    }
+
+}
+
+void Read_Modbus_Holding_Registers_Callback(const rm_msgs::Read_TCPandRTU msg)
+{
+    if(msg.type == 3)
+    {
+        ROS_INFO("Read_Modbus_TCP_Holding_Registers_Callback!\n");
+        int res = 0;
+        res = Read_Modbus_TCP_Holding_Registers(msg.address,msg.num,msg.ip,msg.port,msg.master_name);
+        if(res == 0){
+            // ROS_INFO("Read_Modbus_TCP_Holding_Registers_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Read_Modbus_TCP_Holding_Registers_Callback cmd failed!\n");
+        }
+    }
+    else if(msg.type == 0 || msg.type == 1)
+    {
+        ROS_INFO("Read_Modbus_Rtu_Holding_Registers_Callback!\n");
+        int res = 0;
+        res = Read_Modbus_Rtu_Holding_Registers(msg.address,msg.device,msg.num,msg.type);
+        if(res == 0){
+            // ROS_INFO("Read_Modbus_Rtu_Holding_Registers_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Read_Modbus_Rtu_Holding_Registers_Callback cmd failed!\n");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Invalid Read_TCPandRTU message format! Missing required fields.\n");
+    }
+}
+
+void Write_Modbus_Registers_Callback(const rm_msgs::Write_TCPandRTU msg)
+{
+    if(msg.type == 3)
+    {
+        ROS_INFO("Write_Modbus_Tcp_Registers_Callback!\n");
+        int res = 0;
+        res = Write_Modbus_Tcp_Registers(msg.address,msg.data,msg.ip,msg.port,msg.master_name);
+        if(res == 0){
+            // ROS_INFO("Write_Modbus_Tcp_Registers_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Write_Modbus_Tcp_Registers_Callback cmd failed!\n");
+        } 
+    }
+    else if(msg.type == 0 || msg.type == 1)
+    {
+        ROS_INFO("Write_Modbus_Rtu_Registers_Callback!\n");
+        int res = 0;
+        res = Write_Modbus_Rtu_Registers(msg.address,msg.data,msg.type,msg.device);
+        if(res == 0){
+            // ROS_INFO("Write_Modbus_Rtu_Registers_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Write_Modbus_Rtu_Registers_Callback cmd failed!\n");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Invalid Write_TCPandRTU message format! Missing required fields.\n");
+    }
+}
+
+void Read_Modbus_Input_Registers_Callback(const rm_msgs::Read_TCPandRTU msg)
+{
+    if(msg.type == 3)
+    {
+        ROS_INFO("Read_Modbus_Tcp_Input_Registers_Callback!\n");
+        int res = 0;
+        res = Read_Modbus_Tcp_Input_Registers(msg.address,msg.num,msg.ip,msg.port,msg.master_name);
+        if(res == 0){
+            // ROS_INFO("Read_Modbus_Tcp_Input_Registers_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Read_Modbus_Tcp_Input_Registers_Callback cmd failed!\n");
+        }
+    }
+    else if(msg.type == 0 || msg.type == 1)
+    {
+        ROS_INFO("Read_Modbus_Rtu_Input_Registers_Callback!\n");
+        int res = 0;
+        res = Read_Modbus_Rtu_Input_Registers(msg.address,msg.device,msg.num,msg.type);
+        if(res == 0){
+            // ROS_INFO("Read_Modbus_Rtu_Input_Registers_Callback success!\n");
+        }
+        else{
+            ROS_ERROR("Read_Modbus_Rtu_Input_Registers_Callback cmd failed!\n");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Invalid Read_TCPandRTU message format! Missing required fields.\n");
+    }
+
+}
+
+// -------------------------------适配四代控制器end-------------------------------------
 void Movep_Fd_Callback(const rm_msgs::CartePos msg)
 {
     // ROS_INFO("enter Movep_Fd_Callback");
@@ -1282,7 +1745,7 @@ void Movep_Fd_Callback(const rm_msgs::CartePos msg)
         ROS_ERROR("Movep_Fd failed!\n");
     }
 }
-
+// ----------------------------------------------------------------------------
 void Movep_Fd_Custom_Callback(const rm_msgs::CartePosCustom msg)
 {
     // ROS_INFO("enter Movep_Fd_Callback");
@@ -1330,6 +1793,8 @@ void Set_Realtime_Push_callback(const rm_msgs::Set_Realtime_Push msg)
     Udp_Setting.custom_set_data.joint_speed_ = msg.joint_speed_enable;
     Udp_Setting.custom_set_data.lift_state_ = msg.lift_state_enable;
     Udp_Setting.custom_set_data.tail_end_ = msg.tail_end_enable;
+    Udp_Setting.custom_set_data.rm_plus_state_ = msg.rm_plus_state_enable;
+    Udp_Setting.custom_set_data.rm_plus_base_ = msg.rm_plus_base_enable;
     res = Udp_Set_Realtime_Push(cycle, port, force_coordinate, ip, Udp_Setting.custom_set_data);
     if(res == 0)
     {
@@ -1361,6 +1826,347 @@ void Get_Realtime_Push_callback(const std_msgs::Empty msg)
 
 /**************************************END****************************************/
 
+/***************************Modbus Set function （三代控制器）***********************************/
+void Set_RS485_Callback(const std_msgs::UInt32 msg)
+{
+    u_int32_t baudrate_;
+    baudrate_ = msg.data;
+    int res = 0;
+    res = Set_RS485_Cmd(baudrate_);
+    if(res==0)
+    {
+        ROS_INFO("Set RS485 cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Set RS485 cmd failed!\n");
+    }
+}
+
+void Get_Controller_RS485_Mode_Callback(const std_msgs::Empty msg)
+{
+    int res = 0;
+    res = Get_Controller_RS485_Mode_Cmd();
+    if(res==0)
+    {
+        ROS_INFO("Get Controller RS485 Mode cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Get Controller RS485 Mode cmd failed!\n");
+    }
+}
+
+void Get_Tool_RS485_Mode_Callback(const std_msgs::Empty msg)
+{
+    int res = 0;
+    res = Get_Tool_RS485_Mode_Cmd();
+    if(res==0)
+    {
+        ROS_INFO("Get Tool RS485 Mode cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Get Tool RS485 Mode cmd failed!\n");
+    }
+}
+
+void Set_Modbus_Mode_Callback(const rm_msgs::Set_Modbus_Mode msg)
+{
+    int res = 0;
+    res = Set_Modbus_Mode_Cmd(msg.port, msg.baudrate, msg.timeout);
+    if(res==0)
+    {
+        ROS_INFO("Set Modbus Mode cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Set Modbus Mode cmd failed!\n");
+    }
+}
+
+void Close_Modbus_Mode_Callback(const std_msgs::UInt8 msg)
+{
+    int res = 0;
+    res = Close_Modbus_Mode_Cmd(msg.data);
+    if(res==0)
+    {
+        ROS_INFO("Close Modbus Mode cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Close Modbus Mode cmd failed!\n");
+    }
+}
+
+void Set_Modbustcp_Mode_Callback(const rm_msgs::Set_Modbus_Mode msg)
+{
+    int res = 0;
+    res = Set_Modbustcp_Mode_Cmd(msg.ip, msg.port, msg.timeout);
+    if(res==0)
+    {
+        ROS_INFO("Set Modbustcp Mode cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Set Modbustcp Mode cmd failed!\n");
+    }
+}
+
+void Close_Modbustcp_Mode_Callback(const std_msgs::Empty msg)
+{
+    int res = 0;
+    res = Close_Modbustcp_Mode_Cmd();
+    if(res==0)
+    {
+        ROS_INFO("Close Modbustcp Mode cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Close Modbustcp Mode cmd failed!\n");
+    }
+}
+
+/***************************Modbus Infomation Read/Write function（三代控制器）******************/
+void Read_Coils_Callback(const rm_msgs::Read_Register msg)
+{
+    modbus_data.read_coils.data.resize(1);
+    int res=0;
+    res = Read_Coils_Cmd(msg.port, msg.address, msg.num, msg.device);
+    if(res==0)
+    {
+        ROS_INFO("Read Coils cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Read Coils cmd failed!\n");
+    }
+}
+void Read_Multiple_Coils_Callback(const rm_msgs::Read_Register msg)
+{
+    modbus_data.read_multiple_coils.data.resize(msg.num);
+    int res=0;
+    res = Read_Multiple_Coils_Cmd(msg.port, msg.address, msg.num, msg.device);
+    if(res==0)
+    {
+        ROS_INFO("Read Multiple Coils cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Read Multiple Coils cmd failed!\n");
+    }
+}
+void Write_Single_Coil_Callback(const rm_msgs::Write_Register msg)
+{
+    int res=0;  
+    if(msg.data.size() == 1)
+    {
+        uint16_t data;
+        data = msg.data[0];
+        res = Write_Single_Coil_Cmd(msg.port, msg.address, data, msg.device);
+        if(res==0)
+        {
+            ROS_INFO("Write Single Coil cmd success!\n");
+        }
+        else
+        {
+            ROS_INFO("Write Single Coil cmd failed!\n");
+        }
+    }
+    else
+        ROS_INFO("Write Single Coil cmd data more than one!\n");
+}
+void Write_Coils_Callback(const rm_msgs::Write_Register msg)
+{
+    int res=0;
+    // if(msg.num == msg.data.size())
+    // {   
+        std::vector<uint16_t> data;
+        data.resize(msg.data.size());
+        for(int i = 0;i<msg.data.size();i++)
+        {
+            data[i] = msg.data[i];
+        }
+        res = Write_Coils_Cmd(msg.port, msg.address, msg.num, data, msg.device);
+        if(res==0)
+        {
+            ROS_INFO("Write Coils cmd success!\n");
+        }
+        else
+        {
+            ROS_INFO("Write Coils cmd failed!\n");
+        }
+    // }
+    // else
+    //     ROS_INFO("Write Coils cmd num or data size is error!\n");
+}
+void Read_Input_Status_Callback(const rm_msgs::Read_Register msg)
+{
+    modbus_data.read_input_status.data.resize(1);
+    int res=0;
+    res = Read_Input_Status_Cmd(msg.port, msg.address, msg.num, msg.device);
+    if(res==0)
+    {
+        ROS_INFO("Read Input Status cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Read Input Status cmd failed!\n");
+    }
+}
+void Read_Holding_Registers_Callback(const rm_msgs::Read_Register msg)
+{
+    modbus_data.read_holding_registers.data.resize(1);
+    int res=0;
+    res = Read_Holding_Registers_Cmd(msg.port, msg.address, msg.device);
+    if(res==0)
+    {
+        ROS_INFO("Read Holding Registers cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Read Holding Registers cmd failed!\n");
+    }
+}
+void Write_Single_Register_Callback(const rm_msgs::Write_Register msg)
+{
+    int res=0;
+    if(msg.data.size() == 1)
+    {
+        uint16_t data;
+        data = msg.data[0];
+        res = Write_Single_Register_Cmd(msg.port, msg.address, data, msg.device);
+        if(res==0)
+        {
+            ROS_INFO("Write Single Register cmd success!\n");
+        }
+        else
+        {
+            ROS_INFO("Write Single Register cmd failed!\n");
+        }
+    }
+    else
+        ROS_INFO("Write Single Register cmd data more than one!\n");
+}
+void Write_Registers_Callback(const rm_msgs::Write_Register msg)
+{
+    int res=0;
+    if(msg.num == (msg.data.size()/2))
+    {   
+        std::vector<uint16_t> data;
+        data.resize(msg.data.size());
+        for(int i = 0;i<msg.data.size();i++)
+        {
+            data[i] = msg.data[i];
+        }
+        res = Write_Registers_Cmd(msg.port, msg.address, msg.num, data, msg.device);
+        if(res==0)
+        {
+            ROS_INFO("Write Registers cmd success!\n");
+        }
+        else
+        {
+            ROS_INFO("Write Registers cmd failed!\n");
+        }
+    }
+    else
+        ROS_ERROR("Write Registers cmd num or data size is error!\n");
+}
+void Read_Multiple_Holding_Registers_Callback(const rm_msgs::Read_Register msg)
+{
+    modbus_data.read_multiple_holding_registers.data.resize(msg.num);
+    int res=0;
+    res = Read_Multiple_Holding_Registers_Cmd(msg.port, msg.address, msg.num, msg.device);
+    if(res==0)
+    {
+        ROS_INFO("Read Multiple Holding Registers cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Read Multiple Holding Registers cmd failed!\n");
+    }
+}
+void Read_Input_Registers_Callback(const rm_msgs::Read_Register msg)
+{
+    modbus_data.read_input_registers.data.resize(1);
+    int res=0;
+    res = Read_Input_Registers_Cmd(msg.port, msg.address, msg.device);
+    if(res==0)
+    {
+        ROS_INFO("Read Input Registers cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Read Input Registers cmd failed!\n");
+    }
+}
+void Read_Multiple_Input_Registers_Callback(const rm_msgs::Read_Register msg)
+{
+    modbus_data.read_multiple_input_registers.data.resize(msg.num);
+    int res=0;
+    res = Read_Multiple_Input_Registers_Cmd(msg.port, msg.address, msg.num, msg.device);
+    if(res==0)
+    {
+        ROS_INFO("Read Multiple Input Registers cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Read Multiple Input Registers cmd failed!\n");
+    }
+}
+
+void SetRmPlusMode_Callback(const std_msgs::UInt32 msg)
+{
+    int res=0;
+    res = Set_Rm_Plus_Mode_Cmd(msg.data);
+    if(res==0)
+    {
+        ROS_INFO("Set_Rm_Plus_Mode cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Set_Rm_Plus_Mode cmd failed!\n");
+    }
+}
+void GetRmPlusMode_Callback(const std_msgs::Empty msg)
+{
+    int res=0;
+    res = Get_Rm_Plus_Mode_Cmd();
+    if(res==0)
+    {
+        ROS_INFO("Get_Rm_Plus_Mode_Cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Get_Rm_Plus_Mode_Cmd failed!\n");
+    }
+}
+void SetRmPlusTouch_Callback(const std_msgs::UInt16 msg)
+{
+    int res=0;
+    res = Set_Rm_Plus_Touch_Cmd(msg.data);
+    if(res==0)
+    {
+        ROS_INFO("Set_Rm_Plus_Touch cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Set_Rm_Plus_Touch cmd failed!\n");
+    }
+}
+void GetRmPlusTouch_Callback(const std_msgs::Empty msg)
+{
+    int res=0;
+    res = Get_Rm_Plus_Touch_Cmd();
+    if(res==0)
+    {
+        ROS_INFO("Get_Rm_Plus_Touch_Cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Get_Rm_Plus_Touch_Cmd failed!\n");
+    }
+}
 void timer_callback(const ros::TimerEvent)
 {
 
@@ -1381,7 +2187,7 @@ void timer_callback(const ros::TimerEvent)
 
 struct sockaddr_in clientAddr;
 socklen_t clientAddrLen = sizeof(clientAddr);
-char udp_socket_buffer[1200];
+char udp_socket_buffer[1800];
 
 bool read_data()
 {
@@ -1391,6 +2197,8 @@ bool read_data()
         (struct sockaddr*) & clientAddr, &clientAddrLen);
     if ((numBytes < 0)||(tcp_arm_joint_state == false)) {
         // std::cerr << "Error in recvfrom" << std::endl;
+        // std::cerr << "numBytes:" << numBytes << std::endl;
+        // std::cerr << "tcp_arm_joint_state:" << tcp_arm_joint_state << std::endl;
         close(Udp_Sockfd);
         return false;
     }
@@ -1439,7 +2247,7 @@ void heart_callback(const ros::TimerEvent)
 
     if(SocketConnected() == 1)
     {
-        // ROS_INFO("Connect IS OK");
+        //ROS_INFO("Connect IS OK");
         connect_status = 1;
     }
     else
@@ -1510,10 +2318,10 @@ void heart_callback(const ros::TimerEvent)
 
 int main(int argc, char **argv)
 {
+    setlocale(LC_ALL, "zh_CN.UTF-8");
     ros::init(argc, argv, "robot_driver");
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_("~");
-
     ros::Rate loop_rate(500); // 200Hz,5ms
     int cnt = 0, i = 0;
     struct timeval time_out;
@@ -1545,10 +2353,11 @@ int main(int argc, char **argv)
     rm_msgs::Six_Force work_zero_force;
     rm_msgs::Six_Force tool_zero_force;
     std_msgs::Bool state;
+    std_msgs::UInt32 plus_mode_result;
+    std_msgs::UInt16 plus_touch_result;
     rm_msgs::Joint_Current joint_current;
     rm_msgs::ArmState armState;
     rm_msgs::LiftState liftState;
-    rm_msgs::Arm_Software_Version arm_version;
 
     /***********************************UDP控制数据类型*************************************/ 
     rm_msgs::Set_Realtime_Push udp_set_realtime_push;
@@ -1566,8 +2375,11 @@ int main(int argc, char **argv)
     private_nh_.param<int>        ("Udp_cycle",            Udp_cycle_,             5);
     private_nh_.param<int>        ("Udp_force_coordinate", Udp_force_coordinate,   0);
     private_nh_.param<bool>       ("Udp_hand",             udp_hand_,              false);
+    private_nh_.param<bool>       ("Udp_plus_state",       udp_plus_state_,        false);
+    private_nh_.param<bool>       ("Udp_plus_base",        udp_plus_base_,         false);
     private_nh_.param<int>        ("trajectory_mode",      trajectory_mode_,       0);
     private_nh_.param<int>        ("radio",                radio_,                 0);
+    private_nh_.param<bool>       ("is_4th_Gen",           is_4th_Gen_,            false);
     signal(SIGINT, my_handler); 
     
 
@@ -1602,9 +2414,12 @@ int main(int argc, char **argv)
     Udp_Setting.custom_set_data.joint_speed_ = false;
     Udp_Setting.custom_set_data.lift_state_ = false;
     Udp_Setting.custom_set_data.hand_ = udp_hand_;
+    Udp_Setting.custom_set_data.rm_plus_state_ = udp_plus_state_;
+    Udp_Setting.custom_set_data.rm_plus_base_ = udp_plus_base_;
 
     Get_Arm_Software_Version();
     //ROS_INFO("11111111111111111111111111111111111111111111111111!\n");
+    //std::cout << "controller_version_4 : " << controller_version_4 << std::endl;
     sensor_msgs::JointState real_joint;
     //发送规划角度，仿真真实机械臂连不上
     if(arm_dof == 6)
@@ -1686,12 +2501,142 @@ int main(int argc, char **argv)
     Joint_En = nh_.subscribe("/rm_driver/Joint_Enable", 10, Joint_Enable_Callback);
     System_En = nh_.subscribe("/rm_driver/Clear_System_Err", 10, System_Enable_Callback);
     IO_Update = nh_.subscribe("/rm_driver/IO_Update", 1, IO_Update_Callback);
-    
 
-    // Update:2023-7-25 @HermanYe
-    // Get controller version
-    Sub_Get_Arm_Software_Version = nh_.subscribe("/rm_driver/Get_Arm_Software_Version", 10, Get_Arm_Software_Version_Callback);
-    Get_Arm_Software_Version_Result = nh_.advertise<rm_msgs::Arm_Software_Version>("/rm_driver/Get_Arm_Software_Version_Result", 10);
+
+    std::cout <<"is_4th_GEn:" <<is_4th_Gen_<<std::endl;
+    if(is_4th_Gen_ == 0)
+    {
+        /****************************************modbus 模式配置（三代控制器）*********************************************/
+        sub_setRS485 = nh_.subscribe("/rm_driver/Set_RS485", 10, Set_RS485_Callback);
+        sub_getControllerRS485Mode = nh_.subscribe("/rm_driver/Get_Controller_RS485_Mode",10, Get_Controller_RS485_Mode_Callback);
+        pub_getControllerRS485Mode_result = nh_.advertise<rm_msgs::RS485_Mode>("/rm_driver/Get_Controller_RS485_Mode_Result",10);
+        sub_getToolRS485Mode = nh_.subscribe("/rm_driver/Get_Tool_RS485_Mode", 10, Get_Tool_RS485_Mode_Callback);
+        pub_getToolRS485Mode_result = nh_.advertise<rm_msgs::RS485_Mode>("/rm_driver/Get_Tool_RS485_Mode_Result",10);
+        sub_setModbusMode = nh_.subscribe("/rm_driver/Set_Modbus_Mode", 10, Set_Modbus_Mode_Callback);
+        pub_setModbusMode_result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Modbus_Mode_Result",10);
+        sub_closeModbusMode = nh_.subscribe("/rm_driver/Close_Modbus_Mode", 10, Close_Modbus_Mode_Callback);
+        pub_closeModbusMode_result = nh_.advertise<std_msgs::Bool>("/rm_driver/Close_Modbus_Mode_Result",10);
+        sub_setModbustcpMode = nh_.subscribe("/rm_driver/Set_Modbustcp_Mode", 10, Set_Modbustcp_Mode_Callback);
+        pub_setModbustcpMode_result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Modbustcp_Mode_Result",10);
+        sub_closeModbustcpMode = nh_.subscribe("/rm_driver/Close_Modbustcp_Mode", 10, Close_Modbustcp_Mode_Callback);
+        pub_closeModbustcpMode_result = nh_.advertise<std_msgs::Bool>("/rm_driver/Close_Modbustcp_Mode_Result",10);
+
+        /****************************************modbus 读写寄存器（三代控制器）*********************************************/
+        sub_readCoils = nh_.subscribe("/rm_driver/Read_Coils", 10, Read_Coils_Callback);
+        pub_readCoils_result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Coils_Result",10);
+        sub_readMultipleCoils = nh_.subscribe("/rm_driver/Read_Multiple_Coils", 10, Read_Multiple_Coils_Callback);
+        pub_readMultipleCoils_result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Multiple_Coils_Result",10);
+        sub_writeSingleCoil = nh_.subscribe("/rm_driver/Write_Single_Coil", 10, Write_Single_Coil_Callback);
+        pub_writeSingleCoil_result = nh_.advertise<std_msgs::Bool>("/rm_driver/Write_Single_Coil_Result",10);
+        sub_writeCoils = nh_.subscribe("/rm_driver/Write_Coils", 10, Write_Coils_Callback);
+        pub_writeCoils_result = nh_.advertise<std_msgs::Bool>("/rm_driver/Write_Coils_Result",10);
+        sub_readInputStatus = nh_.subscribe("/rm_driver/Read_Input_Status", 10, Read_Input_Status_Callback);
+        pub_readInputStatus_result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Input_Status_Result",10);
+        sub_readHoldingRegisters = nh_.subscribe("/rm_driver/Read_Holding_Registers", 10, Read_Holding_Registers_Callback);
+        pub_readHoldingRegisters_result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Holding_Registers_Result",10);
+        sub_readMultipleHoldingRegisters = nh_.subscribe("/rm_driver/Read_Multiple_Holding_Registers", 10, Read_Multiple_Holding_Registers_Callback);
+        pub_readMultipleHoldingRegisters_result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Multiple_Holding_Registers_Result",10);
+        sub_writeSingleRegister = nh_.subscribe("/rm_driver/Write_Single_Register", 10, Write_Single_Register_Callback);
+        pub_writeSingleRegister_result = nh_.advertise<std_msgs::Bool>("/rm_driver/Write_Single_Register_Result",10);
+        sub_writeRegisters = nh_.subscribe("/rm_driver/Write_Registers", 10, Write_Registers_Callback);
+        pub_writeRegisters_result = nh_.advertise<std_msgs::Bool>("/rm_driver/Write_Registers_Result",10);
+        sub_readInputRegisters = nh_.subscribe("/rm_driver/Read_Input_Registers", 10, Read_Input_Registers_Callback);
+        pub_readInputRegisters_result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Input_Registers_Result",10);
+        sub_readMultipleInputRegisters = nh_.subscribe("/rm_driver/Read_Multiple_Input_Registers", 10, Read_Multiple_Input_Registers_Callback);
+        pub_readMultipleInputRegisters_result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Multiple_Input_Registers_Result",10);
+
+
+
+        
+    }
+    else if(is_4th_Gen_ == 1)
+    {
+        /********************************************新增Modbus TCP主站********************************************/
+        Add_Modbus_Tcp_Master_cmd = nh_.subscribe("/rm_driver/Add_Modbus_Tcp_Master_cmd", 10, Add_Modbus_Tcp_Master_Callback);
+        Add_Modbus_Tcp_Master_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Add_Modbus_Tcp_Master_Result", 10);
+        /********************************************更新Modbus TCP主站********************************************/
+        Update_Modbus_Tcp_Master_cmd = nh_.subscribe("/rm_driver/Update_Modbus_Tcp_Master_cmd", 10, Update_Modbus_Tcp_Master_Callback);
+        Update_Modbus_Tcp_Master_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Update_Modbus_Tcp_Master_Result", 10);
+        /********************************************删除Modbus TCP主站********************************************/
+        Delete_Modbus_Tcp_Master_cmd = nh_.subscribe("/rm_driver/Delete_Modbus_Tcp_Master_cmd", 10, Delete_Modbus_Tcp_Master_Callback);
+        Delete_Modbus_Tcp_Master_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Delete_Modbus_Tcp_Master_Result", 10);
+        /********************************************查询指定Modbus TCP主站********************************************/
+        Get_Modbus_Tcp_Master_cmd = nh_.subscribe("/rm_driver/Get_Modbus_Tcp_Master_cmd", 10, Get_Modbus_Tcp_Master_Callback);
+        Get_Modbus_Tcp_Master_Result = nh_.advertise<rm_msgs::Modbustcpmasterinfo>("/rm_driver/Get_Modbus_Tcp_Master_Result", 10);
+        /********************************************查询TCP主站列表********************************************/
+        Get_Modbus_Tcp_Master_List_cmd = nh_.subscribe("/rm_driver/Get_Modbus_Tcp_Master_List_cmd", 10, Get_Modbus_Tcp_Master_List_Callback);
+        Get_Modbus_Tcp_Master_List_Result = nh_.advertise<rm_msgs::Modbustcpmasterlist>("/rm_driver/Get_Modbus_Tcp_Master_List_Result", 10);
+        /********************************************设置控制器RS485模式(四代控制器支持)********************************************/
+        Set_Controller_Rs485_Mode_cmd = nh_.subscribe("/rm_driver/Set_Controller_Rs485_Mode_cmd", 10, Set_Controller_Rs485_Mode_Callback);
+        Set_Controller_Rs485_Mode_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Controller_Rs485_Mode_Result", 10);
+        /********************************************查询控制器RS485模式(四代控制器支持)********************************************/
+        Get_Controller_Rs485_Mode_V4_cmd = nh_.subscribe("/rm_driver/Get_Controller_Rs485_Mode_V4_cmd", 10, Get_Controller_Rs485_Mode_V4_Callback);
+        Get_Controller_Rs485_Mode_V4_Result = nh_.advertise<rm_msgs::RS485params>("/rm_driver/Get_Controller_Rs485_Mode_V4_Result", 10);
+        /********************************************设置工具端RS485模式(四代控制器支持)********************************************/
+        Set_Tool_Rs485_Mode_cmd = nh_.subscribe("/rm_driver/Set_Tool_Rs485_Mode_cmd", 10, Set_Tool_Rs485_Mode_Callback);
+        Set_Tool_Rs485_Mode_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Tool_Rs485_Mode_Result", 10);
+        /********************************************查询工具端RS485模式(四代控制器支持)********************************************/
+        Get_Tool_Rs485_Mode_V4_cmd = nh_.subscribe("/rm_driver/Get_Tool_Rs485_Mode_V4_cmd", 10, Get_Tool_Rs485_Mode_V4_Callback);
+        Get_Tool_Rs485_Mode_V4_Result = nh_.advertise<rm_msgs::RS485params>("/rm_driver/Get_Tool_Rs485_Mode_V4_Result", 10);
+
+
+        /****************************************modbus 读写寄存器（四代控制器）*********************************************/
+        //Modbus协议读线圈
+        Read_Modbus_Coils_cmd = nh_.subscribe("/rm_driver/Read_Multiple_Coils", 10, Read_Modbus_Coils_Callback);
+        Read_Modbus_Coils_Result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Multiple_Coils_Result", 10);
+        //Modbus协议写线圈
+        Write_Modbus_Coils_cmd = nh_.subscribe("/rm_driver/Write_Coils", 10, Write_Modbus_Coils_Callback);
+        Write_Modbus_Coils_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Write_Coils_Result", 10);
+        //TCP协议读离散量输入
+        Read_Modbus_Input_Status_cmd = nh_.subscribe("/rm_driver/Read_Input_Status", 10, Read_Modbus_Input_Status_Callback);
+        Read_Modbus_Input_Status_Result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Input_Status_Result", 10);
+        //Modbus协议读保持寄存器
+        Read_Modbus_Holding_Registers_cmd = nh_.subscribe("/rm_driver/Read_Multiple_Holding_Registers", 10, Read_Modbus_Holding_Registers_Callback);
+        Read_Modbus_Holding_Registers_Result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Multiple_Holding_Registers_Result", 10);
+        //Modbus协议写保持寄存器
+        Write_Modbus_Registers_cmd = nh_.subscribe("/rm_driver/Write_Registers", 10, Write_Modbus_Registers_Callback);
+        Write_Modbus_Registers_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Write_Registers_Result", 10);
+        //Modbus协议读输入寄存器
+        Read_Modbus_Input_Registers_cmd = nh_.subscribe("/rm_driver/Read_Multiple_Input_Registers", 10, Read_Modbus_Input_Registers_Callback);
+        Read_Modbus_Input_Registers_Result = nh_.advertise<rm_msgs::Register_Data>("/rm_driver/Read_Multiple_Input_Registers_Result", 10);
+
+
+        /********************************************获取关节软件版本信息********************************************/
+        Get_Joint_Software_Version_Cmd = nh_.subscribe("/rm_driver/Get_Joint_Software_Version_Cmd", 10, Get_Joint_Software_Version_Callback);
+        Get_Joint_Software_Version_Result = nh_.advertise<rm_msgs::Jointversion>("/rm_driver/Get_Joint_Software_Version_Result", 10);
+        /********************************************获取末端接口板软件版本信息********************************************/
+        Get_Tool_Software_Version_Cmd = nh_.subscribe("/rm_driver/Get_Tool_Software_Version_Cmd", 10, Get_Tool_Software_Version_Callback);
+        Get_Tool_Software_Version_Result = nh_.advertise<std_msgs::String>("/rm_driver/Get_Tool_Software_Version_Result", 10);  
+
+        /********************************************设置机械臂急停状态********************************************/
+        Set_Arm_Emergency_Stop_cmd = nh_.subscribe("/rm_driver/Set_Arm_Emergency_Stop", 10, Set_Arm_Emergency_Stop_Callback);
+        Set_Arm_Emergency_Stop_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Arm_Emergency_Stop_Result", 10);
+
+        /********************************************查询轨迹列表********************************************/
+        Get_Trajectory_File_List_cmd = nh_.subscribe("/rm_driver/Get_Trajectory_File_List_Cmd", 10, Get_Trajectory_File_List_Callback);
+        Get_Trajectory_File_List_Result = nh_.advertise<rm_msgs::Trajectorylist>("/rm_driver/Get_Trajectory_File_List_Result", 10);
+        /********************************************开始运行指定轨迹********************************************/
+        Set_Run_Trajectory_cmd = nh_.subscribe("/rm_driver/Set_Run_Trajectory_Cmd", 10, Set_Run_Trajectory_Callback);
+        Set_Run_Trajectory_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Run_Trajectory_Result", 10);
+        /********************************************删除指定轨迹********************************************/
+        Delete_Trajectory_File_cmd = nh_.subscribe("/rm_driver/Delete_Trajectory_File_Cmd", 10, Delete_Trajectory_File_Callback);
+        Delete_Trajectory_File_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Delete_Trajectory_File_Result", 10);
+        /********************************************保存轨迹到控制机器********************************************/
+        Save_Trajectory_File_cmd = nh_.subscribe("/rm_driver/Save_Trajectory_File_Cmd", 10, Save_Trajectory_File_Callback);
+        Save_Trajectory_File_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Save_Trajectory_File_Result", 10);
+
+        /********************************************查询流程图编程状态********************************************/
+        Get_Flowchart_Program_Run_State_cmd = nh_.subscribe("/rm_driver/Get_Flowchart_Program_Run_State_Cmd", 10, Get_Flowchart_Program_Run_State_Callback);
+        Get_Flowchart_Program_Run_State_Result = nh_.advertise<rm_msgs::Flowchartrunstate>("/rm_driver/Get_Flowchart_Program_Run_State_Result", 10);
+        /********************************************笛卡尔空间直线偏移运动********************************************/
+        Movel_Offset_cmd = nh_.subscribe("/rm_driver/Movel_Offset_Cmd", 10, Movel_Offset_Callback);
+        Movel_Offset_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Movel_Offset_Result", 10);
+    }
+
+    
+    /********************************************获取软件版本信息********************************************/
+    Get_Arm_Software_Version_Cmd = nh_.subscribe("/rm_driver/Get_Arm_Software_Version_Cmd", 10, Get_Arm_Software_Version_Callback);
+    Get_Arm_Software_Version_Result = nh_.advertise<rm_msgs::Arm_Software_Version>("/rm_driver/Get_Arm_Software_Version_Result", 20);
     /********************************************udp配置参数修改控制********************************************/
     Set_Realtime_Push = nh_.subscribe("/rm_driver/Set_Realtime_Push", 10, Set_Realtime_Push_callback);
     Set_Realtime_Push_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Realtime_Push_Result", 10);
@@ -1701,6 +2646,7 @@ int main(int argc, char **argv)
     /********************************************力传感器外力数据********************************************/
     pub_ArmError = nh_.advertise<std_msgs::UInt16>("/rm_driver/ArmError", 100);
     pub_SysError = nh_.advertise<std_msgs::UInt16>("/rm_driver/SysError", 100);
+    pub_UdpError = nh_.advertise<rm_msgs::Err>("/rm_driver/Error", 100);
     pub_JointErrorCode = nh_.advertise<rm_msgs::Manual_Set_Force_Pose>("/rm_driver/JointErrorCode", 100);
     /*****************************************发布当前的受力基准坐标系*******************************************/
     pub_Udp_Coordinate = nh_.advertise<std_msgs::UInt16>("/rm_driver/Udp_Coordinate", 10);
@@ -1833,6 +2779,8 @@ int main(int argc, char **argv)
     Plan_State = nh_.advertise<rm_msgs::Plan_State>("/rm_driver/Plan_State", 10);
     pub_PoseState = nh_.advertise<geometry_msgs::Pose>("/rm_driver/Pose_State", 10);
     pub_HandStatus = nh_.advertise<rm_msgs::Hand_Status>("/rm_driver/Udp_Hand_Status", 1);
+    pub_RmPlusState = nh_.advertise<rm_msgs::Rm_Plus_State>("/rm_driver/Udp_Plus_State", 1);
+    pub_RmPlusBase = nh_.advertise<rm_msgs::Rm_Plus_Base>("/rm_driver/Udp_Plus_Base", 1);
     pub_currentJointCurrent = nh_.advertise<rm_msgs::Joint_Current>("/rm_driver/Joint_Current", 10);
     pub_liftState = nh_.advertise<rm_msgs::LiftState>("/rm_driver/LiftState", 10);
     pub_setGripperResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Gripper_Result", 10);
@@ -1881,6 +2829,18 @@ int main(int argc, char **argv)
     /*************************************六维力数据发布（UDP）*******************************************/
     pub_UdpSixForce = nh_.advertise<rm_msgs::Six_Force>("/rm_driver/UdpSixForce", 100);
     pub_UdpSixZeroForce = nh_.advertise<rm_msgs::Six_Force>("/rm_driver/UdpSixZeroForce", 100);
+    /*************************************设置末端生态协议模式*******************************************/
+    sub_setRmPlusMode = nh_.subscribe("/rm_driver/Set_Rm_Plus_Mode", 10, SetRmPlusMode_Callback);
+    pub_setRmPlusModeResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Rm_Plus_Mode_Result", 10);
+    /*************************************查询末端生态协议模式*******************************************/
+    sub_getRmPlusMode = nh_.subscribe("/rm_driver/Get_Rm_Plus_Mode", 10, GetRmPlusMode_Callback);
+    pub_getRmPlusModeResult = nh_.advertise<std_msgs::UInt32>("/rm_driver/Get_Rm_Plus_Mode_Result", 10);
+    /*************************************设置触觉传感器模式*******************************************/
+    sub_setRmPlusTouch = nh_.subscribe("/rm_driver/Set_Rm_Plus_Touch", 10, SetRmPlusTouch_Callback);
+    pub_setRmPlusTouchResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Rm_Plus_Touch_Result", 10);
+    /*************************************查询触觉传感器模式*******************************************/
+    sub_getRmPlusTouch = nh_.subscribe("/rm_driver/Get_Rm_Plus_Touch", 10, GetRmPlusTouch_Callback);
+    pub_getRmPlusTouchResult = nh_.advertise<std_msgs::UInt16>("/rm_driver/Get_Rm_Plus_Touch_Result", 10);
 
     // timer
     State_Timer = nh_.createTimer(ros::Duration(min_interval), timer_callback);
@@ -1905,6 +2865,7 @@ int main(int argc, char **argv)
     spinner.start();
 
 
+
     while (ros::ok())
     {
         while (realtime_arm_joint_state == true)
@@ -1921,7 +2882,6 @@ int main(int argc, char **argv)
             { 
                 break;
             }
-
             recv(Arm_Socket, temp, 1, 0);
             socket_buffer[buffer_cnt] = (char)temp[0];
             buffer_cnt++;
@@ -1957,9 +2917,7 @@ int main(int argc, char **argv)
                         {
                             Udp_Set_Realtime_Push(Udp_cycle_/5, Udp_Port_, Udp_force_coordinate, Udp_IP_,Udp_Setting.custom_set_data);
                         }
-                        arm_version.Product_version = RM_Joint.product_version;
-                        arm_version.Plan_version = RM_Joint.plan_version;
-                        Get_Arm_Software_Version_Result.publish(arm_version);
+                            Get_Arm_Software_Version_Result.publish(arm_version);
                         Info_Arm_Err();
                         break;
                     }
@@ -1976,7 +2934,8 @@ int main(int argc, char **argv)
                         udp_set_realtime_push.expand_state_enable = Udp_Setting.custom_set_data.expand_state_;
                         udp_set_realtime_push.arm_current_status_enable = Udp_Setting.custom_set_data.arm_current_status_;
                         udp_set_realtime_push.aloha_state_enable = Udp_Setting.custom_set_data.aloha_state_;
-
+                        udp_set_realtime_push.rm_plus_state_enable = Udp_Setting.custom_set_data.rm_plus_state_;
+                        udp_set_realtime_push.rm_plus_base_enable = Udp_Setting.custom_set_data.rm_plus_base_;
                         if(Udp_Port_ != Udp_Setting.udp_port)
                         {
                             Udp_Socket_Close();
@@ -2019,6 +2978,18 @@ int main(int argc, char **argv)
                         // start = end;
                         Info_Arm_Err();
                         break;
+                    case SET_RM_PLUS_MODE:
+                        state.data = RM_Joint.state;
+                        pub_setRmPlusModeResult.publish(state);
+                    case GET_RM_PLUS_MODE:
+                        plus_mode_result.data = RM_Joint.mode_result;
+                        pub_getRmPlusModeResult.publish(plus_mode_result);
+                    case SET_RM_PLUS_TOUCH:
+                        state.data = RM_Joint.state;
+                        pub_setRmPlusTouchResult.publish(state);
+                    case GET_RM_PLUS_TOUCH:
+                        plus_touch_result.data = RM_Joint.mode_result;
+                        pub_getRmPlusTouchResult.publish(plus_touch_result);
                     case ARM_JOINT_ERR:
                         Info_Joint_Err();
                         break;
@@ -2120,8 +3091,8 @@ int main(int argc, char **argv)
                             Arm_State.dof = 7;
                             armState.dof = 7;
                         }
-                        // unsigned long int err_size = Arm_Current_State.error.size();
-                        // unsigned long int err_number = 0;
+                        // Arm_State.arm_err = Arm_Current_State.arm_err;
+                        // Arm_State.sys_err = Arm_Current_State.sys_err;
                         Arm_State.err.resize(Arm_Current_State.error.size());
                         armState.err.resize(Arm_Current_State.error.size());
                         for(i = 0;i<Arm_Current_State.error.size();i++)
@@ -2129,7 +3100,6 @@ int main(int argc, char **argv)
                             Arm_State.err[i] = Arm_Current_State.error[i];
                             armState.err[i] = Arm_Current_State.error[i];
                         }
-                        // Arm_State.sys_err = Arm_Current_State.sys_err;
 
                         armState.Pose.position.x = ((float)Arm_Current_State.Pose[0]) / 1000000;
                         armState.Pose.position.y = ((float)Arm_Current_State.Pose[1]) / 1000000;
@@ -2245,6 +3215,57 @@ int main(int argc, char **argv)
                     case FORCE_POSITION_MOVE:
                         state.data = RM_Joint.state;
                         pub_Force_Position_Move_Result.publish(state);
+                        break;
+                    case GET_CONTROLLER_RS485_MODE:
+                        pub_getControllerRS485Mode_result.publish(modbus_data.get_controller_RS485_mode);
+                        break;
+                    case GET_TOOL_RS485_MODE:
+                        pub_getToolRS485Mode_result.publish(modbus_data.get_tool_RS485_mode);
+                        break;
+                    case SET_MODBUS_MODE:
+                        pub_setModbusMode_result.publish(modbus_data.state);
+                        break;
+                    case CLOSE_MODBUS_MODE:
+                        pub_closeModbusMode_result.publish(modbus_data.state);
+                        break;
+                    case SET_MODBUSTCP_MODE:
+                        pub_setModbustcpMode_result.publish(modbus_data.state);
+                        break;
+                    case CLOSE_MODBUSTCP_MODE:
+                        pub_closeModbustcpMode_result.publish(modbus_data.state);
+                        break;
+                    case READ_COILS:
+                        pub_readCoils_result.publish(modbus_data.read_coils);
+                        break;
+                    case READ_MULTIPLE_COILS:
+                        pub_readMultipleCoils_result.publish(modbus_data.read_multiple_coils);
+                        break;
+                    case READ_INPUT_STATUS:
+                        pub_readInputStatus_result.publish(modbus_data.read_input_status);
+                        break;
+                    case READ_HOLDING_REGISTERS:
+                        pub_readHoldingRegisters_result.publish(modbus_data.read_holding_registers);
+                        break;
+                    case READ_MULTIPLE_HOLDING_REGISTERS:
+                        pub_readMultipleHoldingRegisters_result.publish(modbus_data.read_multiple_holding_registers);
+                        break;
+                    case READ_INPUT_REGISTERS:
+                        pub_readInputRegisters_result.publish(modbus_data.read_input_registers);
+                        break;
+                    case READ_MULTIPLE_INPUT_REGISTERS:
+                        pub_readMultipleInputRegisters_result.publish(modbus_data.read_multiple_input_registers);
+                        break;
+                    case WRITE_SINGLE_COIL:
+                        pub_writeSingleCoil_result.publish(modbus_data.state);
+                        break;
+                    case WRITE_COILS:
+                        pub_writeCoils_result.publish(modbus_data.state);
+                        break;
+                    case WRITE_SINGLE_REGISTER:
+                        pub_writeSingleRegister_result.publish(modbus_data.state);
+                        break;
+                    case WRITE_REGISTERS:
+                        pub_writeRegisters_result.publish(modbus_data.state);
                         break;
                     case ARM_CURRENT_JOINT_CURRENT:
                         for (i = 0; i < 6; i++)
@@ -2382,6 +3403,86 @@ int main(int argc, char **argv)
                         }
                         Set_Realtime_Push_Result.publish(state);
                         break;
+                    case SET_ARM_EMERGENCY_STOP:
+                        state.data = RM_Joint.state;
+                        Set_Arm_Emergency_Stop_Result.publish(state);
+                        break;
+                    case GET_TRAJECTORY_FILE_LIST:
+                        Get_Trajectory_File_List_Result.publish(trajectory_list);
+                        break;
+                    case SET_RUN_TRAJECTORY:
+                        state.data = RM_Joint.state;
+                        Set_Run_Trajectory_Result.publish(state);
+                        break;
+                    case DELETE_TRAJECTORY_FILE:
+                        state.data = RM_Joint.state;
+                        Delete_Trajectory_File_Result.publish(state);
+                        break;
+                    case SAVE_TRAJECTORY_FILE:
+                        state.data = RM_Joint.state;
+                        Save_Trajectory_File_Result.publish(state);
+                        break;
+                    case GET_FLOWCHART_PROGRAM_RUN_STATE:
+                        Get_Flowchart_Program_Run_State_Result.publish(flowchart_runstate);
+                        break;
+                    case MOVEL_OFFSET:
+                        state.data = RM_Joint.state;
+                        Movel_Offset_Result.publish(state);
+                        break;
+                    // case ARM_VERSION:
+                    //     if(controller_version_4 == 4)
+                    //         Get_Arm_Software_Version_v4_Result.publish(arm_software_info_v4);
+                    //     break;
+                    case JOINT_VERSION:
+                        Get_Joint_Software_Version_Result.publish(joint_software_version);
+                        break;
+                    case TOOL_VERSION:
+                        Get_Tool_Software_Version_Result.publish(tool_software_version);
+                        break;  
+                    case ADD_MODBUS_TCP_MASTER:
+                        state.data = RM_Joint.state;
+                        Add_Modbus_Tcp_Master_Result.publish(state);
+                        break;
+                    case UPDATE_MODBUS_TCP_MASTER:
+                        state.data = RM_Joint.state;
+                        Update_Modbus_Tcp_Master_Result.publish(state);
+                        break;
+                    case DELETE_MODBUS_TCP_MASTER:
+                        state.data = RM_Joint.state;
+                        Delete_Modbus_Tcp_Master_Result.publish(state);
+                        break;
+                    case GET_MODBUS_TCP_MASTER:
+                        Get_Modbus_Tcp_Master_Result.publish(modbustcp_master_info);
+                        break;    
+                    case GET_MODBUS_TCP_MASTER_LIST:
+                        Get_Modbus_Tcp_Master_List_Result.publish(modbustcp_master_list);
+                        break;    
+                    case SET_CONTROLLER_RS485_MODE:
+                        state.data = RM_Joint.state;
+                        Set_Controller_Rs485_Mode_Result.publish(state);
+                        break;   
+                    case GET_CONTROLLER_RS485_MODE_V4:
+                        Get_Controller_Rs485_Mode_V4_Result.publish(get_modbus_mode);
+                        break;   
+                    case SET_TOOL_RS485_MODE:
+                        state.data = RM_Joint.state;
+                        Set_Tool_Rs485_Mode_Result.publish(state);
+                        break;
+                    case GET_TOOL_RS485_MODE_V4:
+                        Get_Tool_Rs485_Mode_V4_Result.publish(get_modbus_mode);
+                        break;   
+                    case MODBUS_READ:
+                        //printf("Modbus_Read_Case: %d\n", Modbus_Read_Case);
+                        if(Modbus_Read_Case == 1)Read_Modbus_Coils_Result.publish(read_modbus_data);
+                        if(Modbus_Read_Case == 2)Read_Modbus_Input_Status_Result.publish(read_modbus_data);
+                        if(Modbus_Read_Case == 3)Read_Modbus_Holding_Registers_Result.publish(read_modbus_data);
+                        if(Modbus_Read_Case == 4)Read_Modbus_Input_Registers_Result.publish(read_modbus_data);
+                        break;  
+                    case MODBUS_WRITE:
+                        state.data = RM_Joint.state;
+                        if(Modbus_Write_Case == 1)Write_Modbus_Coils_Result.publish(state);
+                        if(Modbus_Write_Case == 2)Write_Modbus_Registers_Result.publish(state);
+                        break;                
                     default:
                         break;
                     }
