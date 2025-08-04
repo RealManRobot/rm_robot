@@ -1,12 +1,13 @@
 <launch>
 
   <arg name="rviz_gazebo_config" default="$(find rm_gazebo)/config/GEN72/rviz_gazebo.rviz"/>
-
+  <arg name="arm_type" default="false"/>
  # The planning and execution components of MoveIt! configured to 
  # publish the current configuration of the robot (simulated or real)
  # and the current state of the world as seen by the planner
  <include file="$(find rm_gen72_moveit_config)/launch/move_group.launch">
   <arg name="publish_monitored_planning_scene" value="true" />
+  <arg name="arm_type" value="$(arg arm_type)" />
  </include>
  # The visualization component of MoveIt!
  <include file="$(find rm_gen72_moveit_config)/launch/moveit_rviz.launch">

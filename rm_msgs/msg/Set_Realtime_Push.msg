@@ -10,3 +10,5 @@ bool joint_acc_enable
 bool joint_speed_enable
 bool lift_state_enable
 bool tail_end_enable
+bool rm_plus_base_enable
+bool rm_plus_state_enable
