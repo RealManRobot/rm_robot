@@ -55,6 +55,7 @@
     <arg name="pipeline" value="$(arg pipeline)"/>
     <arg name="load_robot_description" value="$(arg load_robot_description)"/>
     <arg name="link6_type" value="Link6_6fb" />
+    <arg name="RM63_type" value="RM63II" />
   </include>
 
   <!-- Run Rviz and load the default config to see the state of the move_group node -->

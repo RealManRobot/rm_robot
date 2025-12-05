@@ -7,12 +7,13 @@
 
   <!-- Define the link6_type for the xacro file -->
   <arg name="link6_type" default="Link6"/>
+  <arg name="RM63_type" default="RM63II"/>
 
   <!-- Load universal robot description format (URDF) -->
   <param if="$(arg load_robot_description)" name="$(arg robot_description)" 
-    command="$(find xacro)/xacro $(find rm_description)/urdf/RML63_6FB/rml_63_6fb_description.urdf.xacro         
+    command="$(find xacro)/xacro $(find rm_description)/urdf/RML63_6FB/rml_63_6fb_description.urdf.xacro
     link6_type:=$(arg link6_type)
-  "/>
+    RM63_type:=$(arg RM63_type)"/>
 
   <!-- The semantic description that corresponds to the URDF -->
   <param name="$(arg robot_description)_semantic" textfile="$(find rml_63_moveit_config)/config/rml_63_description.srdf" />

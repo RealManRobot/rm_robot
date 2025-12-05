@@ -15,7 +15,7 @@
     <arg name="Udp_plus_base"            default="false"/>           <!-- 设置末端设备基础信息udp主动上报使能 -->
     <arg name="trajectory_mode"          default="0"/>               <!-- 设置高跟随模式下，支持多种模式，0-完全透传模式、1-曲线拟合模式、2-滤波模式-->
     <arg name="radio"                    default="0"/>               <!-- 设置曲线拟合模式与滤波模式下平滑系数，范围0-100，数值越大表示平滑效果越好--> 
-    <arg name="is_4th_Gen"               default="true"/>            <!-- 判断是否为第四代控制器-->        
+    <arg name="is_4th_Gen"               default="false"/>            <!-- 判断是否为第四代控制器-->        
 
     <!-- 启动机械臂底层驱动节点 -->
     <node name="rm_driver" pkg="rm_driver" type="rm_driver" output="screen" respawn="false">

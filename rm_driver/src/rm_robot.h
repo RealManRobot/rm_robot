@@ -150,6 +150,12 @@
 #include <rm_msgs/Read_ModbusRTU.h>
 #include <rm_msgs/Write_ModbusRTU.h>
 
+/***** ***************2025.11.03 ***********************/
+#include <rm_msgs/Expand_In_Position.h>
+#include <rm_msgs/Expand_Position.h>
+#include <rm_msgs/Expand_Speed.h>
+#include <rm_msgs/ExpandState.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -274,6 +280,17 @@ typedef struct
     byte mode;         //当前升降状态
 } LIFT_STATE;
 LIFT_STATE Lift_Current_State;
+
+typedef struct
+{
+    int16_t pos;    //扩展关节角度，单位度，精度 0.001°。
+    int16_t current;   //当前升降驱动电流，单位：mA，精度：1mA。
+    uint16_t err_flag; //驱动错误代码
+    uint16_t en_flag; //扩展关节使能状态
+    byte mode;         //当前升降状态，0-空闲，1-正方向速度运动，2-正方向位置运动，3-负方向速度运动，4-负方向位置运动。
+    uint16_t joint_id; //扩展关节ID
+} EXPAND_STATE;
+EXPAND_STATE Expand_Current_State;
 
 //机械臂状态结构体，用于查询机械臂状态
 typedef struct
@@ -431,6 +448,7 @@ rm_msgs::Joint_Voltage udp_joint_voltage;
 rm_msgs::Joint_PoseEuler udp_joint_poseEuler;
 
 rm_msgs::Lift_In_Position lift_in_position;
+rm_msgs::Expand_In_Position expand_in_position;
 /*******************************************************************************************************/
 
 
@@ -502,7 +520,7 @@ ros::Subscriber MoveJ_Fd_Custom_Cmd, MoveP_Fd_Custom_Cmd, Sub_ForcePositionMoveP
 /*************************获取一维力数据*23.9.1添加变量 Author kaola**********/
 ros::Subscriber Sub_ToGetOneForce;
 // publisher
-ros::Publisher Joint_State, Arm_IO_State, Tool_IO_State, Plan_State, ChangeTool_Name, ChangeWorkFrame_Name, ArmCurrentState, pub_Force_Position_State, pub_StartMultiDragTeach_Result, pub_StopDragTeach_Result, pub_SetForcePosition_Result, pub_StopForcePosition_Result, pub_ClearForceData_Result, pub_ForceSensorSet_Result, pub_StopSetForceSensor_Result, pub_StartForcePositionMove_Result, pub_StopForcePositionMove_Result, pub_Force_Position_Move_Result, pub_PoseState, pub_HandStatus, pub_RmPlusState, pub_RmPlusBase, pub_JointCurrent, pub_JointEnFlag, pub_JointSpeed, pub_JointTemperature, pub_JointVoltage, pub_ArmCurrentStatus, pub_PoseEuler, pub_LiftInPosition;
+ros::Publisher Joint_State, Arm_IO_State, Tool_IO_State, Plan_State, ChangeTool_Name, ChangeWorkFrame_Name, ArmCurrentState, pub_Force_Position_State, pub_StartMultiDragTeach_Result, pub_StopDragTeach_Result, pub_SetForcePosition_Result, pub_StopForcePosition_Result, pub_ClearForceData_Result, pub_ForceSensorSet_Result, pub_StopSetForceSensor_Result, pub_StartForcePositionMove_Result, pub_StopForcePositionMove_Result, pub_Force_Position_Move_Result, pub_PoseState, pub_HandStatus, pub_RmPlusState, pub_RmPlusBase, pub_JointCurrent, pub_JointEnFlag, pub_JointSpeed, pub_JointTemperature, pub_JointVoltage, pub_ArmCurrentStatus, pub_PoseEuler, pub_LiftInPosition, pub_ExpandInPosition;
 ros::Publisher pub_currentJointCurrent;
 ros::Publisher pub_armCurrentState;
 ros::Publisher pub_liftState;
@@ -652,6 +670,23 @@ ros::Publisher pub_setRmPlusTouchResult;
 /**********************************查询触觉传感器模式************************************/
 ros::Subscriber sub_getRmPlusTouch;
 ros::Publisher pub_getRmPlusTouchResult;
+
+/**********************************V2.6.0************************************/
+/**********************************轨迹暂停************************************/
+ros::Subscriber sub_setArmPause_Cmd;
+ros::Publisher pub_setArmPause_Result;
+/**********************************暂停后恢复功能************************************/
+ros::Subscriber sub_setArmContinue_Cmd;
+ros::Publisher pub_setArmContinue_Result;
+/**********************************扩展关节状态获取************************************/
+ros::Subscriber sub_getExpandState_Cmd;
+ros::Publisher pub_getExpandState_Result;
+/**********************************扩展关节速度环控制************************************/
+ros::Subscriber sub_setExpandSpeed_Cmd;
+ros::Publisher pub_setExpandSpeed_Result;
+/**********************************扩展关节位置环控制************************************/
+ros::Subscriber sub_setExpandPos_Cmd;
+ros::Publisher pub_setExpandPos_Result;
 // std::mutex mutex;
 
 // timer
@@ -773,6 +808,13 @@ uint16_t CONTROLLER_VERSION = 0;
 #define GET_TOOL_RS485_MODE_V4 0X63
 #define MODBUS_READ 0X64
 #define MODBUS_WRITE 0X65
+
+/*******************V2.6.0 **********************/
+#define SET_ARM_CONTINUE 0X66
+#define EXPAND_CURRENT_STATE 0X67
+#define SET_EXPAND_SPEED 0X68
+#define EXPAND_IN_POSITION 0X69
+#define SET_ARM_PAUSE 0X6A
 
 float min_interval = 0.02;              //透传周期,单位:秒
 float udp_min_interval = 0.005;          //机械臂状态发布,单位:秒
@@ -3311,6 +3353,121 @@ int Get_Rm_Plus_Touch_Cmd()
     }
     return 0;
 }
+
+int Set_Rm_Arm_Continue_Cmd()
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "set_arm_continue");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("get_rm_plus_touch cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Set_Rm_Arm_Pause_Cmd()
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "set_arm_pause");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("get_rm_plus_touch cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Get_Expand_State_Cmd()
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "expand_get_state");
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("get_rm_plus_touch cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Set_Expand_Speed_Cmd(int speed)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "expand_set_speed");
+    cJSON_AddNumberToObject(root, "speed", speed);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("get_rm_plus_touch cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+int Set_Expand_Pos_Cmd(int pos, int speed)
+{
+    cJSON *root;
+    char *data;
+    char buffer[200];
+    int res;
+    //创建根节点对象
+    root = cJSON_CreateObject();
+    //加入字符串对象
+    cJSON_AddStringToObject(root, "command", "expand_set_pos");
+    cJSON_AddNumberToObject(root, "pos", pos);
+    cJSON_AddNumberToObject(root, "speed", speed);
+    data = cJSON_Print(root);
+    sprintf(buffer, "%s\r\n", data);
+    // ROS_INFO("get_rm_plus_touch cmmand: %s",buffer);
+    res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
+    cJSON_Delete(root);
+    free(data);
+    if (res < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 //角度透传
 int Movej_CANFD(float *joint,float expand,bool follow, uint8_t trajectory_mode, uint8_t radio)
 {
@@ -5565,6 +5722,52 @@ int Parser_Lift_State(char *msg)
         return 3;
 }
 
+int Parser_Expand_State(char *msg)
+{
+    cJSON *root = NULL, *result;
+    root = cJSON_Parse(msg);
+
+    if (root == NULL)
+    {
+        cJSON_Delete(root);
+        return 2;
+    }
+
+    result = cJSON_GetObjectItem(root, "pos");
+    if (result != NULL && result->type == cJSON_Number)
+    {
+        Expand_Current_State.pos = result->valueint;
+        result = cJSON_GetObjectItem(root, "err_flag");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            Expand_Current_State.err_flag = result->valueint;
+        }
+        result = cJSON_GetObjectItem(root, "en_flag");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            Expand_Current_State.en_flag = result->valueint;
+        }
+        result = cJSON_GetObjectItem(root, "current");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            Expand_Current_State.current = result->valueint;
+        }
+        result = cJSON_GetObjectItem(root, "mode");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            Expand_Current_State.mode = result->valueint;
+        }
+        result = cJSON_GetObjectItem(root, "joint_id");
+        if (result != NULL && result->type == cJSON_Number)
+        {
+            Expand_Current_State.joint_id = result->valueint;
+        }
+        cJSON_Delete(root);
+        return 0;
+    }
+    else
+        return 3;
+}
 int Parser_Get_Realtime_Push_Data(char *msg)
 {
     cJSON *root = NULL, *result, *custom;
@@ -7503,6 +7706,20 @@ int Parser_Msg(char *msg)
                 return -3;
             }
         }
+        if (json_state->type == cJSON_String && !strcmp("expand_state", json_state->valuestring))
+        {
+            res = Parser_Expand_State(msg);
+            if (res == 0)
+            {
+                cJSON_Delete(root);
+                return EXPAND_CURRENT_STATE;
+            }
+            else
+            {
+                cJSON_Delete(root);
+                return -3;
+            }
+        }
         if (json_state->type == cJSON_String && !strcmp("tool_IO_state", json_state->valuestring))
         {
             res = Parser_Tool_IO_Input(msg);
@@ -7644,7 +7861,16 @@ int Parser_Msg(char *msg)
             if (res == 0)
             {
                 cJSON_Delete(root);
-                return LIFT_IN_POSITION;
+                if (lift_in_position.device == 3)
+                {
+                    return LIFT_IN_POSITION;
+                }else if(lift_in_position.device == 4){
+                    expand_in_position.device = lift_in_position.device;
+                    expand_in_position.state = lift_in_position.state;
+                    expand_in_position.trajectory_connect = lift_in_position.trajectory_connect;
+                    expand_in_position.trajectory_state = lift_in_position.trajectory_state;
+                    return EXPAND_IN_POSITION;
+                }
             }
             else
             {
@@ -8101,6 +8327,23 @@ int Parser_Msg(char *msg)
                 }
             } 
         }
+        else if(!strcmp("expand_set_speed", json_state->valuestring))  //扩展关节速度控制返回
+        {
+           json_state = cJSON_GetObjectItem(root, "set_speed_state");
+            if (json_state != NULL)
+            {
+                if (json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return SET_EXPAND_SPEED;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return SET_EXPAND_SPEED;
+                }
+            } 
+        }
         else if(!strcmp("set_realtime_push", json_state->valuestring))//UDP端口控制返回
         {
            json_state = cJSON_GetObjectItem(root, "state");
@@ -8409,10 +8652,62 @@ int Parser_Msg(char *msg)
                 }
             } 
         }
+        else if(!strcmp("set_arm_continue", json_state->valuestring))//设置速度返回
+        {
+           json_state = cJSON_GetObjectItem(root, "arm_continue");
+            if (json_state != NULL)
+            {
+                if (json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return SET_ARM_CONTINUE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return SET_ARM_CONTINUE;
+                }
+            } 
+        }
+        else if(!strcmp("set_arm_pause", json_state->valuestring))//设置速度返回
+        {
+           json_state = cJSON_GetObjectItem(root, "arm_pause");
+            if (json_state != NULL)
+            {
+                if (json_state->type == cJSON_True)
+                {
+                    RM_Joint.state = true;
+                    return SET_ARM_PAUSE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.state = false;
+                    return SET_ARM_PAUSE;
+                }
+            } 
+        }
         /********************************升降机构返回************************************/
         else if(!strcmp("set_lift_height", json_state->valuestring))//位置闭环控制设置输出
         {
            json_state = cJSON_GetObjectItem(root, "set_state");
+            if (json_state != NULL)
+            {
+                if (json_state->type == cJSON_True)
+                {
+                    RM_Joint.plan_flag = 1;
+                    return PLAN_STATE_TYPE;
+                }
+                else if(json_state->type == cJSON_False)
+                {
+                    RM_Joint.plan_flag = 0;
+                    return PLAN_STATE_TYPE;
+                }
+            } 
+        }
+        /********************************扩展关节返回************************************/
+        else if(!strcmp("expand_set_pos", json_state->valuestring))//位置闭环控制设置输出
+        {
+           json_state = cJSON_GetObjectItem(root, "set_pos_state");
             if (json_state != NULL)
             {
                 if (json_state->type == cJSON_True)
