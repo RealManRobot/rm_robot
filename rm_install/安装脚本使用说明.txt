@@ -1,0 +1,17 @@
+提供环境安装脚本。使用方式：
+第一步：小鱼ros一键安装
+运行脚本
+wget http://fishros.com/install  -O fishros && bash fishros
+推荐选项：
+[1]:一键安装(推荐):ROS(支持ROS/ROS2,树莓派Jetson)
+[1]:更换系统源再继续安装
+[2]:更换系统源并清理第三方源
+[1]:自动测速选择最快的源
+[2]:清华镜像源 (容易被封禁)
+[5]:(ROS1)
+[1]:(ROS1)桌面版
+
+第二步：新建终端
+cd ros_ws/src/rm_install/
+chmod +x rm_install_package.sh
+./rm_install_package.sh
