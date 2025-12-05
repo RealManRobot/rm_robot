@@ -145,6 +145,10 @@ Read_TCPandRTU.msg
 Write_TCPandRTU.msg
 Read_ModbusRTU.msg
 Write_ModbusRTU.msg
+Expand_In_Position.msg
+Expand_Position.msg
+Expand_Speed.msg
+ExpandState.msg
 )
 
 ## Generate services in the 'srv' folder

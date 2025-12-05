@@ -1,0 +1,22 @@
+<launch>
+  <arg name="model"        default="$(find rm_description)/urdf/RML63_6FB/rml_63_6fb_description.urdf.xacro"/>
+  <arg name="link6_type"   default="Link6"/>
+  <arg name="RM63_type"    default="RM63III"/>
+  <param name="robot_description"
+         command="$(find xacro)/xacro $(arg model)
+                  link6_type:=$(arg link6_type)
+                  RM63_type:=$(arg RM63_type)"/>
+  <node
+    name="joint_state_publisher_gui"
+    pkg="joint_state_publisher_gui"
+    type="joint_state_publisher_gui" />
+  <node
+    name="robot_state_publisher"
+    pkg="robot_state_publisher"
+    type="robot_state_publisher" />
+  <node
+    name="rviz"
+    pkg="rviz"
+    type="rviz"
+    args="-d $(find rm_description)/config/RML63.rviz" />
+</launch>

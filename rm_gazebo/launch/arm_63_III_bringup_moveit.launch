@@ -5,7 +5,7 @@
     <!-- Launch Gazebo  -->
     <include file="$(find rm_gazebo)/launch/RML63/arm_world.launch" >
         <arg name="link6_type" value="Link6" />
-        <arg name="RM63_type" value="RM63II" />
+        <arg name="RM63_type" value="RM63III" />
     </include> 
 
     <!-- ros_control arm launch file -->
@@ -18,6 +18,6 @@
     <include file="$(find rml_63_moveit_config)/launch/moveit_planning_execution.launch" >
         <arg name="rviz_gazebo_config" value="$(arg rvizconfig)" />
         <arg name="link6_type" value="Link6" />
-        <arg name="RM63_type" value="RM63II" />
+        <arg name="RM63_type" value="RM63III" />
     </include>
 </launch>

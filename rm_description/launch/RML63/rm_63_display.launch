@@ -1,9 +1,11 @@
 <launch>
-  <arg
-    name="model" />
-  <param
-    name="robot_description"
-    textfile="$(find rm_description)/urdf/RML63/rml_63_description.urdf" />
+  <arg name="model"        default="$(find rm_description)/urdf/RML63_6FB/rml_63_6fb_description.urdf.xacro"/>
+  <arg name="link6_type"   default="Link6"/>
+  <arg name="RM63_type"    default="RM63II"/>
+  <param name="robot_description"
+         command="$(find xacro)/xacro $(arg model)
+                  link6_type:=$(arg link6_type)
+                  RM63_type:=$(arg RM63_type)"/>
   <node
     name="joint_state_publisher_gui"
     pkg="joint_state_publisher_gui"

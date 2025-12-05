@@ -5,8 +5,10 @@
 <robot name="rml_63_description" xmlns:xacro="http://www.ros.org/wiki/xacro">
 <!-- arg link6_type -->
 <xacro:arg name="link6_type" default="Link6" />
+<xacro:arg name="RM63_type" default="RM63II" />
   <!-- arg->property -->
 <xacro:property name="link6_type" value="$(arg link6_type)" />
+<xacro:property name="RM63_type" value="$(arg RM63_type)" />
 <xacro:include filename="$(find rm_description)/urdf/RML63/rml_63.transmission.xacro"/>
 <xacro:include filename="$(find rm_description)/urdf/RML63/rml_63.gazebo.xacro"/>
 <!-- Inertial matrix -->
@@ -53,6 +55,7 @@
         </collision>
         <xacro:Box_inertial_matrix m="500" l="1" w="1" h="0.02"/>
     </link>
+  <xacro:if value="${ RM63_type =='RM63III' }">
   <link
     name="base_link">
     <inertial>
@@ -75,7 +78,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RML63/base_link.STL" />
+          filename="package://rm_description/meshes/RML63/base_link_III.STL" />
       </geometry>
       <material
         name="">
@@ -89,7 +92,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RML63/base_link.STL" />
+          filename="package://rm_description/meshes/RML63/base_link_III.STL" />
       </geometry>
     </collision>
   </link>
@@ -108,6 +111,109 @@
         iyy="0.0043772"
         iyz="1.7209E-05"
         izz="0.0040911" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/RML63/link1_III.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/RML63/link1_III.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint1"
+    type="revolute">
+    <origin
+      xyz="0 0 0.1625"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="link1" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-3.107"
+      upper="3.107"
+      effort="100"
+      velocity="1" />
+    <dynamics
+      damping="50"
+      friction="1" />
+  </joint>
+  </xacro:if>
+  <xacro:if value="${ RM63_type =='RM63II' }">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.001418 -0.00010076 0.050086"
+        rpy="0 0 0" />
+      <mass
+        value="0.66248" />
+      <inertia
+        ixx="0.00099641"
+        ixy="3.2555E-06"
+        ixz="-1.005E-05"
+        iyy="0.0010163"
+        iyz="1.2819E-06"
+        izz="0.00067925" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/RML63/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rm_description/meshes/RML63/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="link1">
+    <inertial>
+      <origin
+        xyz="-0.043398 -0.0074204 -0.012727"
+        rpy="0 0 0" />
+      <mass
+        value="0.92308" />
+      <inertia
+        ixx="0.00093348"
+        ixy="-0.00032512"
+        ixz="0.00049759"
+        iyy="0.0021248"
+        iyz="0.00010864"
+        izz="0.001984" />
     </inertial>
     <visual>
       <origin
@@ -137,7 +243,7 @@
     name="joint1"
     type="revolute">
     <origin
-      xyz="0 0 0.1625"
+      xyz="0 0 0.172"
       rpy="0 0 0" />
     <parent
       link="base_link" />
@@ -150,10 +256,8 @@
       upper="3.107"
       effort="100"
       velocity="1" />
-    <dynamics
-      damping="50"
-      friction="1" />
   </joint>
+  </xacro:if>
   <link
     name="link2">
     <inertial>

@@ -2154,6 +2154,7 @@ void SetRmPlusTouch_Callback(const std_msgs::UInt16 msg)
         ROS_INFO("Set_Rm_Plus_Touch cmd failed!\n");
     }
 }
+
 void GetRmPlusTouch_Callback(const std_msgs::Empty msg)
 {
     int res=0;
@@ -2165,6 +2166,72 @@ void GetRmPlusTouch_Callback(const std_msgs::Empty msg)
     else
     {
         ROS_INFO("Get_Rm_Plus_Touch_Cmd failed!\n");
+    }
+}
+/**********************************V2.6.0************************************/
+void SetArmPause_Callback(const std_msgs::Empty msg)
+{
+    int res=0;
+    res = Set_Rm_Arm_Pause_Cmd();
+    if(res==0)
+    {
+        ROS_INFO("Set_Rm_Arm_Continue_Cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Set_Rm_Arm_Continue_Cmd failed!\n");
+    }
+}
+void SetArmContinue_Callback(const std_msgs::Empty msg)
+{
+    int res=0;
+    res = Set_Rm_Arm_Continue_Cmd();
+    if(res==0)
+    {
+        ROS_INFO("Set_Rm_Arm_Continue_Cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Set_Rm_Arm_Continue_Cmd failed!\n");
+    }
+}
+void GetExpandState_Callback(const std_msgs::Empty msg)
+{
+    int res=0;
+    res = Get_Expand_State_Cmd();
+    if(res==0)
+    {
+        ROS_INFO("Get_Expand_State_Cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Get_Expand_State_Cmd failed!\n");
+    }
+}
+void SetExpandSpeed_Callback(const rm_msgs::Expand_Speed msg)
+{
+    int res=0;
+    res = Set_Expand_Speed_Cmd(msg.speed);
+    if(res==0)
+    {
+        ROS_INFO("Set_Expand_Speed_Cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Set_Expand_Speed_Cmd failed!\n");
+    }
+}
+void SetExpandPos_Callback(const rm_msgs::Expand_Position msg)
+{
+    int res=0;
+    res = Set_Expand_Pos_Cmd(msg.pos, msg.speed);
+    if(res==0)
+    {
+        ROS_INFO("Set_Expand_Pos_Cmd success!\n");
+    }
+    else
+    {
+        ROS_INFO("Set_Expand_Pos_Cmd failed!\n");
     }
 }
 void timer_callback(const ros::TimerEvent)
@@ -2358,6 +2425,7 @@ int main(int argc, char **argv)
     rm_msgs::Joint_Current joint_current;
     rm_msgs::ArmState armState;
     rm_msgs::LiftState liftState;
+    rm_msgs::ExpandState expandState;
 
     /***********************************UDP控制数据类型*************************************/ 
     rm_msgs::Set_Realtime_Push udp_set_realtime_push;
@@ -2793,6 +2861,7 @@ int main(int argc, char **argv)
     pub_JointVoltage = nh_.advertise<rm_msgs::Joint_Voltage>("/rm_driver/Udp_Joint_Voltage",10);
     pub_PoseEuler = nh_.advertise<rm_msgs::Joint_PoseEuler>("/rm_driver/Udp_Joint_PoseEuler",10);
     pub_LiftInPosition = nh_.advertise<rm_msgs::Lift_In_Position>("/rm_driver/Lift_InPosition",10);
+    pub_ExpandInPosition = nh_.advertise<rm_msgs::Expand_In_Position>("/rm_driver/Expand_InPosition",10);
     /******************************************************************************************/
     pub_setLiftSpeedResult = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Lift_Speed_Result", 10);
     /***************************************灵巧手控制****************************************/
@@ -2842,6 +2911,24 @@ int main(int argc, char **argv)
     sub_getRmPlusTouch = nh_.subscribe("/rm_driver/Get_Rm_Plus_Touch", 10, GetRmPlusTouch_Callback);
     pub_getRmPlusTouchResult = nh_.advertise<std_msgs::UInt16>("/rm_driver/Get_Rm_Plus_Touch_Result", 10);
 
+    /**********************************V2.6.0************************************/
+    /**********************************轨迹暂停************************************/
+    sub_setArmPause_Cmd  = nh_.subscribe("/rm_driver/Set_Arm_Pause_Cmd", 10, SetArmPause_Callback);
+    pub_setArmPause_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Arm_Pause_Result", 10);
+    /**********************************暂停后恢复功能************************************/
+    sub_setArmContinue_Cmd  = nh_.subscribe("/rm_driver/Set_Arm_Continue_Cmd", 10, SetArmContinue_Callback);
+    pub_setArmContinue_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Arm_Continue_Result", 10);
+    /**********************************扩展关节状态获取************************************/
+    sub_getExpandState_Cmd = nh_.subscribe("/rm_driver/Get_Expand_State_Cmd", 10, GetExpandState_Callback);
+    pub_getExpandState_Result = nh_.advertise<rm_msgs::ExpandState>("/rm_driver/Get_Expand_State_Result", 10);
+    /**********************************扩展关节速度环控制************************************/
+    sub_setExpandSpeed_Cmd = nh_.subscribe("/rm_driver/Set_Expand_Speed_Cmd", 10, SetExpandSpeed_Callback);
+    pub_setExpandSpeed_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Expand_Speed_Result", 10);
+    /**********************************扩展关节位置环控制************************************/
+    sub_setExpandPos_Cmd = nh_.subscribe("/rm_driver/Set_Expand_Pos_Cmd", 10, SetExpandPos_Callback);
+    pub_setExpandPos_Result = nh_.advertise<std_msgs::Bool>("/rm_driver/Set_Expand_Pos_Result", 10);
+    // pub_ExpandInPosition = nh_.advertise<rm_msgs::Expand_In_Position>("/rm_driver/Lift_InPosition",10);
+    /**********************************V2.6.0 end************************************/
     // timer
     State_Timer = nh_.createTimer(ros::Duration(min_interval), timer_callback);
 
@@ -3040,6 +3127,9 @@ int main(int argc, char **argv)
                         break;
                     case LIFT_IN_POSITION:
                         pub_LiftInPosition.publish(lift_in_position);
+                        break;
+                    case EXPAND_IN_POSITION:
+                        pub_ExpandInPosition.publish(expand_in_position);
                         break;
                     case PLAN_STATE_TYPE:
                         Plan.state = RM_Joint.plan_flag;
@@ -3285,6 +3375,15 @@ int main(int argc, char **argv)
                         liftState.mode = Lift_Current_State.mode;
                         pub_liftState.publish(liftState);
                         break;
+                    case EXPAND_CURRENT_STATE:
+                        expandState.pos = Expand_Current_State.pos;
+                        expandState.current = Expand_Current_State.current;
+                        expandState.err_flag = Expand_Current_State.err_flag;
+                        expandState.en_flag = Expand_Current_State.en_flag;
+                        expandState.mode = Expand_Current_State.mode;
+                        expandState.joint_id = Expand_Current_State.joint_id;
+                        pub_getExpandState_Result.publish(expandState);
+                        break;
                     case SET_GRIPPER_STATE:
                         state.data = set_gripper_result;
                         pub_setGripperResult.publish(state);
@@ -3308,6 +3407,10 @@ int main(int argc, char **argv)
                     case SET_LIFT_SPEED:
                         state.data = RM_Joint.state;
                         pub_setLiftSpeedResult.publish(state);
+                        break;
+                    case SET_EXPAND_SPEED:
+                        state.data = RM_Joint.state;
+                        pub_setExpandSpeed_Result.publish(state);
                         break;
                     case SET_HAND_POSTURE:
                         state.data = RM_Joint.state;
@@ -3369,6 +3472,12 @@ int main(int argc, char **argv)
                     case SET_SYSTEM_EN_STATE:
                         state.data = RM_Joint.state;
                         pub_System_En_State_Result.publish(state);
+                    case SET_ARM_CONTINUE:
+                        state.data = RM_Joint.state;
+                        pub_setArmContinue_Result.publish(state);
+                    case SET_ARM_PAUSE:
+                        state.data = RM_Joint.state;
+                        pub_setArmPause_Result.publish(state);
                     case SET_REALTIME_PUSH:
                         state.data = RM_Joint.state;
                         

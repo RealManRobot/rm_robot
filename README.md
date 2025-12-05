@@ -1,8 +1,14 @@
 # RealMan Robot
 
-* Version V2.5.0
+* Version V2.6.0
 * This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
 
+### Easy environment setup 
+---
+wget http://fishros.com/install -O fishros && bash fishros
+cd ros_ws/src/rm_install/
+chmod +x rm_install_package.sh
+./rm_install_package.sh
 ### Installation from Source
 ---
 
