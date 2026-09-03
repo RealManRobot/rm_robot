@@ -25,6 +25,7 @@ include
 )
 
 add_executable(api_Control_Arm_Move_demo src/api_move_demo.cpp)
+add_dependencies(api_Control_Arm_Move_demo ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(api_Control_Arm_Move_demo ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 

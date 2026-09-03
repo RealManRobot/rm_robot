@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot  name="rm_65" xmlns:xacro="http://www.ros.org/wiki/xacro">
-<xacro:include filename="$(find rm_65_description)/urdf/RM65/rm_65.transmission.xacro"/>
-<xacro:include filename="$(find rm_65_description)/urdf/RM65/rm_65.gazebo.xacro"/>
+<xacro:include filename="$(find rm_description)/urdf/RM65/rm_65.transmission.xacro"/>
+<xacro:include filename="$(find rm_description)/urdf/RM65/rm_65.gazebo.xacro"/>
   <link name="dummy">
   </link>
   <link
@@ -26,7 +26,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/base_link.STL" />
+          filename="package://rm_description/meshes/RM65/base_link.STL" />
       </geometry>
       <material
         name="">
@@ -40,7 +40,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/base_link.STL" />
+          filename="package://rm_description/meshes/RM65/base_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -79,7 +79,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link1.STL" />
+          filename="package://rm_description/meshes/RM65/link1.STL" />
       </geometry>
       <material
         name="">
@@ -93,7 +93,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link1.STL" />
+          filename="package://rm_description/meshes/RM65/link1.STL" />
       </geometry>
     </collision>
   </link>
@@ -138,7 +138,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link2.STL" />
+          filename="package://rm_description/meshes/RM65/link2.STL" />
       </geometry>
       <material
         name="">
@@ -152,7 +152,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link2.STL" />
+          filename="package://rm_description/meshes/RM65/link2.STL" />
       </geometry>
     </collision>
   </link>
@@ -197,7 +197,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link3.STL" />
+          filename="package://rm_description/meshes/RM65/link3.STL" />
       </geometry>
       <material
         name="">
@@ -211,7 +211,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link3.STL" />
+          filename="package://rm_description/meshes/RM65/link3.STL" />
       </geometry>
     </collision>
   </link>
@@ -256,7 +256,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link4.STL" />
+          filename="package://rm_description/meshes/RM65/link4.STL" />
       </geometry>
       <material
         name="">
@@ -270,7 +270,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link4.STL" />
+          filename="package://rm_description/meshes/RM65/link4.STL" />
       </geometry>
     </collision>
   </link>
@@ -315,7 +315,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link5.STL" />
+          filename="package://rm_description/meshes/RM65/link5.STL" />
       </geometry>
       <material
         name="">
@@ -329,7 +329,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link5.STL" />
+          filename="package://rm_description/meshes/RM65/link5.STL" />
       </geometry>
     </collision>
   </link>
@@ -374,7 +374,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link6.STL" />
+          filename="package://rm_description/meshes/RM65/link6.STL" />
       </geometry>
       <material
         name="">
@@ -388,7 +388,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_65_description/meshes/RM65/link6.STL" />
+          filename="package://rm_description/meshes/RM65/link6.STL" />
       </geometry>
     </collision>
   </link>

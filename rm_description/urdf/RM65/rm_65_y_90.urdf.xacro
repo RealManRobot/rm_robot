@@ -82,13 +82,8 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link1.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_1.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
       <origin
@@ -141,13 +136,8 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link2.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_2.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
       <origin
@@ -200,13 +190,8 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link3.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_3.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
       <origin
@@ -259,13 +244,8 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link4.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_4.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
       <origin
@@ -318,13 +298,8 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link5.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_5.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
       <origin
@@ -377,13 +352,8 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link6.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_6_bi.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
       <origin

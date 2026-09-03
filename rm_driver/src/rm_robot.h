@@ -16,6 +16,8 @@
 #include <signal.h>             // signal functions ctrl+c
 #include<assert.h>              // UDP协议依赖库
 #include <sstream>              // 获取机械臂版本所需库@HermanYe
+#include <limits>
+#include <cmath>
 
 
 #include <sys/ioctl.h>          // 设置非阻塞需要用到的头文件
@@ -95,6 +97,7 @@
 #include <rm_msgs/ArmState.h>
 #include <std_msgs/Byte.h>
 #include <rm_msgs/Hand_Angle.h>
+#include <rm_msgs/Hand_Pos.h>
 #include <rm_msgs/Hand_Force.h>
 #include <rm_msgs/Hand_Posture.h>
 #include <rm_msgs/Hand_Seq.h>
@@ -1376,32 +1379,56 @@ int SetHandAngle(int16_t *hand_angle,bool block)
     return 0;
 }
 
-int SetHandFollowAngle(int16_t *hand_angle)
+int SetHandFollowAngle(int16_t *hand_angle, int num_dof)
 {
     cJSON *root, *array;
     char *data;
-    char buffer[200];
+    char buffer[512];
     int res;
-    int r = 0;
-    //创建根节点对象
+
+    if (hand_angle == NULL || (num_dof != 1 && num_dof != 6))
+    {
+        return -1;
+    }
     root = cJSON_CreateObject();
+    if (root == NULL) return -1;
     array = cJSON_CreateArray();
-    //数组加入数据
-    cJSON_AddNumberToObject(array, "test", hand_angle[0]);
-    cJSON_AddNumberToObject(array, "test", hand_angle[1]);
-    cJSON_AddNumberToObject(array, "test", hand_angle[2]);
-    cJSON_AddNumberToObject(array, "test", hand_angle[3]);
-    cJSON_AddNumberToObject(array, "test", hand_angle[4]);
-    cJSON_AddNumberToObject(array, "test", hand_angle[5]);
+    if (array == NULL)
+    {
+        cJSON_Delete(root);
+        return -1;
+    }
+    for (int i = 0; i < num_dof; i++)
+    {
+        cJSON *number = cJSON_CreateNumber(hand_angle[i]);
+        if (number == NULL)
+        {
+            cJSON_Delete(array);
+            cJSON_Delete(root);
+            return -1;
+        }
+        cJSON_AddItemToArray(array, number);
+    }
 
-    //加入字符串对象
-    cJSON_AddStringToObject(root, "command", "hand_follow_angle");
-    cJSON_AddItemToObject(root, "hand_angle", array);
+    cJSON *command = cJSON_CreateString("hand_follow_angle");
+    if (command == NULL || command->valuestring == NULL)
+    {
+        cJSON_Delete(command);
+        cJSON_Delete(array);
+        cJSON_Delete(root);
+        return -1;
+    }
+    cJSON_AddItemToObjectCS(root, "command", command);
+    cJSON_AddItemToObjectCS(root, "hand_angle", array);
 
-    data = cJSON_Print(root);
+    data = cJSON_PrintUnformatted(root);
+    if (data == NULL)
+    {
+        cJSON_Delete(root);
+        return -1;
+    }
 
-    sprintf(buffer, "%s\r\n", data);
-    // res = send(Arm_Socket, buffer, strlen(buffer), 0);
+    snprintf(buffer, sizeof(buffer), "%s\r\n", data);
     res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
     cJSON_Delete(root);
     free(data);
@@ -1413,32 +1440,56 @@ int SetHandFollowAngle(int16_t *hand_angle)
     return 0;
 }
 
-int SetHandFollowPos(int16_t *hand_angle)
+int SetHandFollowPos(int16_t *hand_angle, int num_dof)
 {
     cJSON *root, *array;
     char *data;
-    char buffer[200];
+    char buffer[512];
     int res;
-    int r = 0;
-    //创建根节点对象
+
+    if (hand_angle == NULL || (num_dof != 1 && num_dof != 6))
+    {
+        return -1;
+    }
     root = cJSON_CreateObject();
+    if (root == NULL) return -1;
     array = cJSON_CreateArray();
-    //数组加入数据
-    cJSON_AddNumberToObject(array, "test", hand_angle[0]);
-    cJSON_AddNumberToObject(array, "test", hand_angle[1]);
-    cJSON_AddNumberToObject(array, "test", hand_angle[2]);
-    cJSON_AddNumberToObject(array, "test", hand_angle[3]);
-    cJSON_AddNumberToObject(array, "test", hand_angle[4]);
-    cJSON_AddNumberToObject(array, "test", hand_angle[5]);
+    if (array == NULL)
+    {
+        cJSON_Delete(root);
+        return -1;
+    }
+    for (int i = 0; i < num_dof; i++)
+    {
+        cJSON *number = cJSON_CreateNumber(hand_angle[i]);
+        if (number == NULL)
+        {
+            cJSON_Delete(array);
+            cJSON_Delete(root);
+            return -1;
+        }
+        cJSON_AddItemToArray(array, number);
+    }
 
-    //加入字符串对象
-    cJSON_AddStringToObject(root, "command", "hand_follow_pos");
-    cJSON_AddItemToObject(root, "hand_pos", array);
+    cJSON *command = cJSON_CreateString("hand_follow_pos");
+    if (command == NULL || command->valuestring == NULL)
+    {
+        cJSON_Delete(command);
+        cJSON_Delete(array);
+        cJSON_Delete(root);
+        return -1;
+    }
+    cJSON_AddItemToObjectCS(root, "command", command);
+    cJSON_AddItemToObjectCS(root, "hand_pos", array);
 
-    data = cJSON_Print(root);
+    data = cJSON_PrintUnformatted(root);
+    if (data == NULL)
+    {
+        cJSON_Delete(root);
+        return -1;
+    }
 
-    sprintf(buffer, "%s\r\n", data);
-    // res = send(Arm_Socket, buffer, strlen(buffer), 0);
+    snprintf(buffer, sizeof(buffer), "%s\r\n", data);
     res = package_send(Arm_Socket, buffer, strlen(buffer), 0);
     cJSON_Delete(root);
     free(data);
@@ -1783,6 +1834,7 @@ int SendTurtleCtrCmd(std::string message_type, std::string robot_mac_address, fl
 /***** ********************************END****************************************/
 
 //关节空间规划
+// 如需设置交融半径，请在运动消息、回调及组包函数中添加 r 参数。
 int Movej_Cmd(float *joint, byte v, uint8_t trajectory_connect)
 {
     cJSON *root, *array;
@@ -3306,6 +3358,7 @@ int Get_Rm_Plus_Mode_Cmd()
     }
     return 0;
 }
+
 
 int Set_Rm_Plus_Touch_Cmd(uint32_t mode)
 {
@@ -5885,6 +5938,181 @@ int Parser_Get_Realtime_Push_Data(char *msg)
     return 0;
 }
 
+template <typename ValueType>
+static bool Parse_Json_Number_Field(cJSON *object, const char *name, ValueType &value, bool required = true)
+{
+    cJSON *field = cJSON_GetObjectItem(object, name);
+    if (field == NULL) return !required;
+    if (field->type != cJSON_Number)
+    {
+        return false;
+    }
+
+    const double number = field->valuedouble;
+    if (!std::isfinite(number) || number != floor(number) ||
+        number < static_cast<double>(std::numeric_limits<ValueType>::min()) ||
+        number > static_cast<double>(std::numeric_limits<ValueType>::max()))
+    {
+        return false;
+    }
+
+    value = static_cast<ValueType>(number);
+    return true;
+}
+
+template <typename ArrayType>
+static bool Parse_Json_Number_Array_Field(cJSON *object, const char *name, ArrayType &values)
+{
+    cJSON *field = cJSON_GetObjectItem(object, name);
+    if (field == NULL) return true;
+    if (field->type != cJSON_Array)
+    {
+        return false;
+    }
+
+    const int size = cJSON_GetArraySize(field);
+    ArrayType parsed_values;
+    parsed_values.resize(size);
+    for (int i = 0; i < size; ++i)
+    {
+        cJSON *item = cJSON_GetArrayItem(field, i);
+        if (item == NULL || item->type != cJSON_Number)
+        {
+            return false;
+        }
+        typedef typename ArrayType::value_type ValueType;
+        const double number = item->valuedouble;
+        if (!std::isfinite(number) || number != floor(number) ||
+            number < static_cast<double>(std::numeric_limits<ValueType>::min()) ||
+            number > static_cast<double>(std::numeric_limits<ValueType>::max()))
+        {
+            return false;
+        }
+        parsed_values[i] = static_cast<ValueType>(number);
+    }
+
+    values.swap(parsed_values);
+    return true;
+}
+
+template <typename ValueType>
+static bool Parse_Json_Bool_Field(cJSON *object, const char *name, ValueType &value, bool required = true)
+{
+    cJSON *field = cJSON_GetObjectItem(object, name);
+    if (field == NULL) return !required;
+    if (field->type != cJSON_True && field->type != cJSON_False)
+    {
+        return false;
+    }
+
+    value = field->type == cJSON_True;
+    return true;
+}
+
+static bool Parse_Json_String_Or_Number_Field(cJSON *object, const char *name, std::string &value, bool required = true)
+{
+    cJSON *field = cJSON_GetObjectItem(object, name);
+    if (field == NULL) return !required;
+
+    if (field->type == cJSON_String && field->valuestring != NULL)
+    {
+        value = field->valuestring;
+        return true;
+    }
+    if (field->type == cJSON_Number)
+    {
+        const double number = field->valuedouble;
+        if (!std::isfinite(number) || number != floor(number) ||
+            number < static_cast<double>(std::numeric_limits<int>::min()) ||
+            number > static_cast<double>(std::numeric_limits<int>::max()))
+        {
+            return false;
+        }
+        std::ostringstream stream;
+        stream << static_cast<int>(number);
+        value = stream.str();
+        return true;
+    }
+
+    return false;
+}
+
+static bool Parse_And_Publish_Rm_Plus_State(cJSON *root)
+{
+    cJSON *object = cJSON_GetObjectItem(root, "rm_plus_state");
+    if (object == NULL || object->type != cJSON_Object)
+    {
+        return false;
+    }
+
+    rm_msgs::Rm_Plus_State message;
+    bool parsed = Parse_Json_Number_Field(object, "sys_state", message.sys_state);
+    parsed &= Parse_Json_Number_Field(object, "sys_err", message.sys_err);
+    parsed &= Parse_Json_Number_Array_Field(object, "dof_state", message.dof_state);
+    parsed &= Parse_Json_Number_Array_Field(object, "dof_err", message.dof_err);
+    parsed &= Parse_Json_Number_Array_Field(object, "pos", message.pos);
+    parsed &= Parse_Json_Number_Array_Field(object, "speed", message.speed);
+    parsed &= Parse_Json_Number_Array_Field(object, "angle", message.angle);
+    parsed &= Parse_Json_Number_Array_Field(object, "current", message.current);
+    parsed &= Parse_Json_Number_Array_Field(object, "normal_force", message.normal_force);
+    parsed &= Parse_Json_Number_Array_Field(object, "tangential_force", message.tangential_force);
+    parsed &= Parse_Json_Number_Array_Field(object, "tangential_force_dir", message.tangential_force_dir);
+    parsed &= Parse_Json_Number_Array_Field(object, "tsa", message.tsa);
+    parsed &= Parse_Json_Number_Array_Field(object, "tma", message.tma);
+    parsed &= Parse_Json_Number_Array_Field(object, "touch_data", message.touch_data);
+    parsed &= Parse_Json_Number_Array_Field(object, "force", message.force);
+
+    if (parsed)
+    {
+        udp_plus_state = message;
+        pub_RmPlusState.publish(udp_plus_state);
+    }
+    if (!parsed) ROS_WARN_THROTTLE(5.0, "Invalid rm_plus_state feedback");
+    return parsed;
+}
+
+static bool Parse_And_Publish_Rm_Plus_Base(cJSON *root)
+{
+    cJSON *object = cJSON_GetObjectItem(root, "rm_plus_base");
+    if (object == NULL || object->type != cJSON_Object)
+    {
+        return false;
+    }
+
+    rm_msgs::Rm_Plus_Base message;
+    bool parsed = Parse_Json_String_Or_Number_Field(object, "manu", message.manu);
+    parsed &= Parse_Json_Number_Field(object, "type", message.type);
+    parsed &= Parse_Json_String_Or_Number_Field(object, "hv", message.hv, false);
+    parsed &= Parse_Json_String_Or_Number_Field(object, "sv", message.sv, false);
+    parsed &= Parse_Json_String_Or_Number_Field(object, "bv", message.bv, false);
+    parsed &= Parse_Json_Number_Field(object, "id", message.id, false);
+    const bool dof_parsed = Parse_Json_Number_Field(object, "dof", message.dof);
+    parsed &= dof_parsed && message.dof > 0;
+    parsed &= Parse_Json_Number_Field(object, "check", message.check, false);
+    parsed &= Parse_Json_Number_Field(object, "bee", message.bee, false);
+    parsed &= Parse_Json_Bool_Field(object, "force", message.force, false);
+    parsed &= Parse_Json_Bool_Field(object, "touch", message.touch, false);
+    parsed &= Parse_Json_Number_Field(object, "touch_num", message.touch_num, false);
+    parsed &= Parse_Json_Number_Field(object, "touch_sw", message.touch_sw, false);
+    parsed &= Parse_Json_Number_Field(object, "hand", message.hand, false);
+    parsed &= Parse_Json_Number_Array_Field(object, "pos_up", message.pos_up);
+    parsed &= Parse_Json_Number_Array_Field(object, "pos_low", message.pos_low);
+    parsed &= Parse_Json_Number_Array_Field(object, "angle_up", message.angle_up);
+    parsed &= Parse_Json_Number_Array_Field(object, "angle_low", message.angle_low);
+    parsed &= Parse_Json_Number_Array_Field(object, "speed_up", message.speed_up);
+    parsed &= Parse_Json_Number_Array_Field(object, "speed_low", message.speed_low);
+    parsed &= Parse_Json_Number_Array_Field(object, "force_up", message.force_up);
+    parsed &= Parse_Json_Number_Array_Field(object, "force_low", message.force_low);
+
+    if (parsed)
+    {
+        udp_plus_base = message;
+        pub_RmPlusBase.publish(udp_plus_base);
+    }
+    if (!parsed) ROS_WARN_THROTTLE(5.0, "Invalid rm_plus_base feedback");
+    return parsed;
+}
+
 // Udp Parser Realtime_Arm_Joint_State
 int Parser_Realtime_Arm_Joint_State(char *msg)
 {
@@ -5900,7 +6128,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
     }
 /***********************************arm_current_status状态**************************************************/
     result = cJSON_GetObjectItem(root, "arm_current_status");
-    if(result != NULL)
+    if(result != NULL && result->type == cJSON_String && result->valuestring != NULL)
     {
         Udp_RM_Joint.arm_current_status = result->valuestring;
         udp_arm_current_status.arm_current_status = Udp_RM_Joint.arm_current_status; 
@@ -5941,7 +6169,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
 
     /**********************获取机械臂关节使能状态************************/
     json_member = cJSON_GetObjectItem(result, "joint_en_flag");
-    if (json_member->type == cJSON_Array)
+    if (json_member != NULL && json_member->type == cJSON_Array)
     {
         size = cJSON_GetArraySize(json_member);
         if (size == arm_dof)
@@ -5971,7 +6199,7 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
 
     /**********************获取机械臂关节错误码*************************/
     json_member = cJSON_GetObjectItem(result, "joint_err_code");
-    if (json_member->type == cJSON_Array)
+    if (json_member != NULL && json_member->type == cJSON_Array)
     {
         size = cJSON_GetArraySize(json_member);
         if (size == arm_dof)
@@ -6266,537 +6494,6 @@ int Parser_Realtime_Arm_Joint_State(char *msg)
         }
     }
 /********************************************************************************************** */
-    result = cJSON_GetObjectItem(root, "rm_plus_state");
-    if((result != NULL)&&(strcmp("disable", result->valuestring)))
-    {
-        /*****************************获取sys_state信息***************************/
-        json_member = cJSON_GetObjectItem(result, "sys_state");
-        if (json_member != NULL )
-        {
-            udp_plus_state.sys_state = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取sys_err信息***************************/
-        json_member = cJSON_GetObjectItem(result, "sys_err");
-        if (json_member != NULL )
-        {
-            udp_plus_state.sys_err = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取angle信息***************************/
-        json_member = cJSON_GetObjectItem(result, "angle");
-        if (json_member != NULL && json_member->type == cJSON_Array )
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.angle.resize(size);
-            for(int i = 0;i<size;i++)
-            {
-                udp_plus_state.angle[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-            // Udp_Hand_Data.hand_err = json_member->valueint;
-            // udp_plus_state.hand_err = Udp_Hand_Data.hand_err;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***********************************************************************/
-
-        /***************************获取hand_pos信息********************************/
-        json_member = cJSON_GetObjectItem(result, "current");
-        
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.current.resize(size);
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_state.current[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-
-        /***************************获取hand_angle信息********************************/
-        json_member = cJSON_GetObjectItem(result, "dof_err");
-
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.dof_err.resize(size);
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_state.dof_err[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***************************获取dof_state信息********************************/
-        json_member = cJSON_GetObjectItem(result, "dof_state");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.dof_state.resize(size);
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_state.dof_state[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-
-        /***************************获取normal_force信息********************************/
-        json_member = cJSON_GetObjectItem(result, "normal_force");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.normal_force.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_state.normal_force[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***************************获取pos信息********************************/
-        json_member = cJSON_GetObjectItem(result, "pos");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.pos.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_state.pos[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***************************获取speed信息********************************/
-        json_member = cJSON_GetObjectItem(result, "speed");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.speed.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_state.speed[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***************************获取tangential_force信息********************************/
-        json_member = cJSON_GetObjectItem(result, "tangential_force");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.tangential_force.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_state.tangential_force[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***************************获取tangential_force_dir信息********************************/
-        json_member = cJSON_GetObjectItem(result, "tangential_force_dir");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.tangential_force_dir.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_state.tangential_force_dir[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***************************获取tma信息********************************/
-        json_member = cJSON_GetObjectItem(result, "tma");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.tma.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_state.tma[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***************************获取tsa信息********************************/
-        json_member = cJSON_GetObjectItem(result, "tsa");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_state.tsa.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_state.tsa[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-            pub_RmPlusState.publish(udp_plus_state);
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-    }
-/********************************************rm_plus_base******************************************/
-    result = cJSON_GetObjectItem(root, "rm_plus_base");
-    if((result != NULL)&&(strcmp("disable", result->valuestring)))
-    {
-        /*****************************获取bee信息***************************/
-        json_member = cJSON_GetObjectItem(result, "bee");
-        if (json_member != NULL )
-        {
-            udp_plus_base.bee = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取bv信息***************************/
-        json_member = cJSON_GetObjectItem(result, "bv");
-        if (json_member != NULL )
-        {
-            udp_plus_base.bv = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取check信息***************************/
-        json_member = cJSON_GetObjectItem(result, "check");
-        if (json_member != NULL )
-        {
-            udp_plus_base.check = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取dof信息***************************/
-        json_member = cJSON_GetObjectItem(result, "dof");
-        if (json_member != NULL )
-        {
-            udp_plus_base.dof = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取force信息***************************/
-        json_member = cJSON_GetObjectItem(result, "force");
-        if ( json_member != NULL )
-        {
-            if(json_member->type == cJSON_True)
-            udp_plus_base.force = true;
-            else if(json_member->type == cJSON_False)
-            udp_plus_base.force = false;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取hand信息***************************/
-        json_member = cJSON_GetObjectItem(result, "hand");
-        if (json_member != NULL )
-        {
-            udp_plus_base.hand = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取hv信息***************************/
-        json_member = cJSON_GetObjectItem(result, "hv");
-        if (json_member != NULL )
-        {
-            udp_plus_base.hv = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取id信息***************************/
-        json_member = cJSON_GetObjectItem(result, "id");
-        if (json_member != NULL )
-        {
-            udp_plus_base.id = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取manu信息***************************/
-        json_member = cJSON_GetObjectItem(result, "manu");
-        if (json_member != NULL )
-        {
-            udp_plus_base.manu = json_member->valuestring;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取sv信息***************************/
-        json_member = cJSON_GetObjectItem(result, "sv");
-        if (json_member != NULL )
-        {
-            udp_plus_base.sv = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取force信息***************************/
-        json_member = cJSON_GetObjectItem(result, "touch");
-        if ( json_member != NULL )
-        {
-            if(json_member->type == cJSON_True)
-            udp_plus_base.touch = true;
-            else if(json_member->type == cJSON_False)
-            udp_plus_base.touch = false;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取touch_num信息***************************/
-        json_member = cJSON_GetObjectItem(result, "touch_num");
-        if (json_member != NULL )
-        {
-            udp_plus_base.touch_num = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取touch_sw信息***************************/
-        json_member = cJSON_GetObjectItem(result, "touch_sw");
-        if (json_member != NULL )
-        {
-            udp_plus_base.touch_sw = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取type信息***************************/
-        json_member = cJSON_GetObjectItem(result, "type");
-        if (json_member != NULL )
-        {
-            udp_plus_base.type = json_member->valueint;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /*****************************获取angle信息***************************/
-        json_member = cJSON_GetObjectItem(result, "angle_low");
-        if (json_member != NULL && json_member->type == cJSON_Array )
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_base.angle_low.resize(size);
-            for(int i = 0;i<size;i++)
-            {
-                udp_plus_base.angle_low[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-            // Udp_Hand_Data.hand_err = json_member->valueint;
-            // udp_hand_status.hand_err = Udp_Hand_Data.hand_err;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***********************************************************************/
-
-        /*****************************获取angle信息***************************/
-        json_member = cJSON_GetObjectItem(result, "angle_up");
-        if (json_member != NULL && json_member->type == cJSON_Array )
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_base.angle_up.resize(size);
-            for(int i = 0;i<size;i++)
-            {
-                udp_plus_base.angle_up[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-            // Udp_Hand_Data.hand_err = json_member->valueint;
-            // udp_hand_status.hand_err = Udp_Hand_Data.hand_err;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***********************************************************************/
-        /*****************************获取force_low信息***************************/
-        json_member = cJSON_GetObjectItem(result, "force_low");
-        if (json_member != NULL && json_member->type == cJSON_Array )
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_base.force_low.resize(size);
-            for(int i = 0;i<size;i++)
-            {
-                udp_plus_base.force_low[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-            // Udp_Hand_Data.hand_err = json_member->valueint;
-            // udp_hand_status.hand_err = Udp_Hand_Data.hand_err;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***********************************************************************/
-        /*****************************获取force信息***************************/
-        json_member = cJSON_GetObjectItem(result, "force_up");
-        if (json_member != NULL && json_member->type == cJSON_Array )
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_base.force_up.resize(size);
-            for(int i = 0;i<size;i++)
-            {
-                udp_plus_base.force_up[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-            // Udp_Hand_Data.hand_err = json_member->valueint;
-            // udp_hand_status.hand_err = Udp_Hand_Data.hand_err;
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***********************************************************************/
-        /***************************获取pos信息********************************/
-        json_member = cJSON_GetObjectItem(result, "pos_low");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_base.pos_low.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_base.pos_low[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***************************获取pos信息********************************/
-        json_member = cJSON_GetObjectItem(result, "pos_up");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_base.pos_up.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_base.pos_up[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***************************获取speed_low信息********************************/
-        json_member = cJSON_GetObjectItem(result, "speed_low");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_base.speed_low.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_base.speed_low[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-        /***************************获取speed_up信息********************************/
-        json_member = cJSON_GetObjectItem(result, "speed_up");
-        if (json_member != NULL && json_member->type == cJSON_Array)
-        {
-            size = cJSON_GetArraySize(json_member);
-            udp_plus_base.speed_up.resize(size);
-
-            for (i = 0; i < size; i++)
-            {
-                udp_plus_base.speed_up[i] = cJSON_GetArrayItem(json_member, i)->valueint;
-            }
-            pub_RmPlusBase.publish(udp_plus_base);
-        }
-        else
-        {
-            cJSON_Delete(root);
-            return 1;
-        }
-    }
-
-
 /**********************************************state相关数据******************************************************/
     result = cJSON_GetObjectItem(root, "waypoint");
     /*****************************获取position信息***************************/
@@ -7089,24 +6786,46 @@ int Parser_Udp_Msg(char *msg)
         cJSON_Delete(root);
         return -1;
     }
+
+    bool plus_parsed = Parse_And_Publish_Rm_Plus_State(root);
+    plus_parsed |= Parse_And_Publish_Rm_Plus_Base(root);
    
     /**********************************处理arm_err*************************/
     json_state = cJSON_GetObjectItem(root,"err");
     if (json_state != NULL && json_state->type == cJSON_Array)
     {
         int Err_size = cJSON_GetArraySize(json_state);//可以获取长度
-        udp_error.err.resize(Err_size);
+        rm_msgs::Err parsed_error;
+        parsed_error.err.resize(Err_size);
+        bool error_valid = true;
         for(int i = 0; i < Err_size; i++)
         {
-            udp_error.err[i] = cJSON_GetArrayItem(json_state, i)->valueint;
+            cJSON *error_item = cJSON_GetArrayItem(json_state, i);
+            if (error_item == NULL || error_item->type != cJSON_Number ||
+                error_item->valuedouble != floor(error_item->valuedouble) ||
+                error_item->valuedouble < 0 ||
+                error_item->valuedouble > std::numeric_limits<uint16_t>::max())
+            {
+                error_valid = false;
+                break;
+            }
+            parsed_error.err[i] = static_cast<uint16_t>(error_item->valuedouble);
             // ROS_INFO("Arm_Current_State.arm_err: %d", Arm_Current_State.error[i]);
         }
-        pub_UdpError.publish(udp_error);
+        if (error_valid)
+        {
+            udp_error = parsed_error;
+            pub_UdpError.publish(udp_error);
+        }
     }
-    else
+    else if (json_state != NULL && json_state->type == cJSON_Number &&
+             json_state->valuedouble == floor(json_state->valuedouble) &&
+             json_state->valuedouble >= 0 &&
+             json_state->valuedouble <= std::numeric_limits<uint16_t>::max())
     {
-        cJSON_Delete(root);
-        return 1;
+        udp_error.err.resize(1);
+        udp_error.err[0] = static_cast<uint16_t>(json_state->valuedouble);
+        pub_UdpError.publish(udp_error);
     }
     // json_state = cJSON_GetObjectItem(root, "arm_err");
     // if (json_state != NULL && json_state->type == cJSON_Number)
@@ -7135,7 +6854,8 @@ int Parser_Udp_Msg(char *msg)
     
     /************************************处理UDP其他数据*****************************/
     json_state = cJSON_GetObjectItem(root, "joint_status");
-    if (json_state != NULL)
+    const bool has_joint_status = json_state != NULL && json_state->type == cJSON_Object;
+    if (has_joint_status)
     {
         res = Parser_Realtime_Arm_Joint_State(msg);
         if (res == 0)
@@ -7143,14 +6863,19 @@ int Parser_Udp_Msg(char *msg)
             cJSON_Delete(root);
             return 0;
         }
-        else
-        {
-            cJSON_Delete(root);
-            return -3;
-        }
     }
 
-    return 5;    
+    cJSON_Delete(root);
+
+    if (has_joint_status)
+    {
+        return -3;
+    }
+    if (plus_parsed)
+    {
+        return 0;
+    }
+    return 5;
 }
 
 int Parser_Trajectory_List(char *msg)
@@ -7952,7 +7677,7 @@ int Parser_Msg(char *msg)
     //  ROS_INFO("*****************************cJSON_GetObjectItem:  command");
 
     json_state = cJSON_GetObjectItem(root, "command");
-    if (json_state != NULL)
+    if (json_state != NULL && json_state->type == cJSON_String && json_state->valuestring != NULL)
     {
         if (!strcmp("start_multi_drag_teach", json_state->valuestring))
         {

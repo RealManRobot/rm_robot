@@ -1,28 +1,25 @@
-<?xml version="1.0" encoding="utf-8"?>
-<robot  name="rm_65" xmlns:xacro="http://www.ros.org/wiki/xacro">
-<xacro:include filename="$(find rm_description)/urdf/RM65/rm_65.transmission.xacro"/>
-<xacro:include filename="$(find rm_description)/urdf/RM65/rm_65.gazebo.xacro"/>
-  <!-- Inertial matrix -->
+<?xml version='1.0' encoding='UTF-8'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rm_65">
+  <xacro:include filename="$(find rm_description)/urdf/RM65/rm_65.transmission.xacro"/>
+  <xacro:include filename="$(find rm_description)/urdf/RM65/rm_65.gazebo.xacro"/>
+  <!-- Inertial matrix-->
   <xacro:macro name="inertial_matrix" params="mass">
     <inertial>
-      <mass value="${mass}" />
-      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="0.5" iyz="0.0" izz="1.0" />
-	</inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="0.5" iyz="0.0" izz="1.0"/>
+    </inertial>
   </xacro:macro>
   <xacro:macro name="Box_inertial_matrix" params="m l w h">
     <inertial>
-      <mass value="${m}" />
-        <inertia ixx="${m*(h*h + l*l)/12}" ixy = "0" ixz = "0"
-          iyy="${m*(w*w + l*l)/12}" iyz= "0"
-          izz="${m*(w*w + h*h)/12}" />
+      <mass value="${m}"/>
+      <inertia ixx="${m*(h*h + l*l)/12}" ixy="0" ixz="0" iyy="${m*(w*w + l*l)/12}" iyz="0" izz="${m*(w*w + h*h)/12}"/>
     </inertial>
   </xacro:macro>
   <link name="dummy">
   </link>
-  
-  <!-- ///////////////////////////////////////   bottom_joint   ////////////////////////////////////////// -->
+  <!-- ///////////////////////////////////////   bottom_joint   //////////////////////////////////////////-->
   <joint name="bottom_joint" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0" />
+    <origin xyz="0 0 0" rpy="0 0 0"/>
     <parent link="base_link"/>
     <child link="bottom_link"/>
   </joint>
@@ -35,82 +32,50 @@
       <material name="Brown" />
     </visual>
     <collision>
-      <origin xyz=" 0 0 0"  rpy="0 0 0"/>
+      <origin xyz=" 0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.06 0.06 0.02" />
+        <box size="0.06 0.06 0.02"/>
       </geometry>
     </collision>
     <xacro:Box_inertial_matrix m="500" l="1" w="1" h="0.02"/>
   </link>
-  
-  <link
-    name="base_link">
+  <link name="base_link">
     <inertial>
-      <origin
-        xyz="-0.000433277303987328 -3.54664423471128E-05 0.0599427668933796"
-        rpy="0 0 0" />
-      <mass
-        value="0.841070778135659" />
-      <inertia
-        ixx="0.0017261110801622"
-        ixy="2.52746264980217E-06"
-        ixz="-3.67690303614961E-05"
-        iyy="0.00170987405835604"
-        iyz="1.67996364994424E-06"
-        izz="0.000904023422915791" />
+      <origin xyz="-0.00049987 -5.2709E-05 0.060019" rpy="0 0 0"/>
+      <mass value="1.862"/>
+      <inertia ixx="0.0017232" ixy="-3.1058E-06" ixz="3.7924E-05" iyy="0.0017051" iyz="-1.3691E-06" izz="0.00090158"/>
     </inertial>
     <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/RM65/base_link.STL" />
+        <mesh filename="package://rm_description/meshes/RM65/base_link.STL"/>
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
+      <material name="">
+        <color rgba="1 1 1 1"/>
       </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/RM65/base_link.STL" />
+        <mesh filename="package://rm_description/meshes/RM65/base_link.STL"/>
       </geometry>
     </collision>
   </link>
-  
   <gazebo reference="base_link">
     <mu1 value="200000.0"/>
     <mu2 value="200000.0"/>
     <kp value="100000000.0"/>
     <kd value="1.0"/>
   </gazebo>
-  
   <joint name="dummy_joint" type="fixed">
-    <parent link="dummy" />
-    <child link="base_link" />
+    <parent link="dummy"/>
+    <child link="base_link"/>
   </joint>
-  
-  <link
-    name="Link1">
+  <link name="Link1">
     <inertial>
-      <origin
-        xyz="1.2226305431569E-08 0.0211079974844683 -0.0251854220842269"
-        rpy="0 0 0" />
-      <mass
-        value="0.593563443690403" />
-      <inertia
-        ixx="0.00126614120341847"
-        ixy="-1.294980943835E-08"
-        ixz="-9.80120923066996E-09"
-        iyy="0.00118168178300364"
-        iyz="-0.00021121727444415"
-        izz="0.00056135241627747" />
+      <origin xyz="0.000941 0.007803 -0.10744" rpy="0 0 0"/>
+      <mass value="1.51"/>
+      <inertia ixx="0.002662223" ixy="-0.000026849" ixz="-0.000013775" iyy="0.002331685" iyz="-0.000078667" izz="0.001663712"/>
     </inertial>
     <visual>
       <origin
@@ -118,58 +83,29 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link1.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_1.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/RM65/link1.STL" />
+        <mesh filename="package://rm_description/meshes/RM65/link1.STL"/>
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint1"
-    type="revolute">
-    <origin
-      xyz="0 0 0.2405"
-      rpy="0 0 0" />
-    <parent
-      link="base_link" />
-    <child
-      link="Link1" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      lower="-3.1"
-      upper="3.1"
-      effort="60"
-      velocity="3.14" />
-	<dynamics damping="50" friction="1"/>
+  <joint name="joint1" type="revolute">
+    <origin xyz="0 0 0.2405" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="Link1"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.106" upper="3.106" effort="60" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
-  <link
-    name="Link2">
+  <link name="Link2">
     <inertial>
-      <origin
-        xyz="0.152256463426163 4.75383656106654E-07 -0.00620260383607792"
-        rpy="0 0 0" />
-      <mass
-        value="0.864175046869043" />
-      <inertia
-        ixx="0.00089150298478414"
-        ixy="-2.23268489334765E-08"
-        ixz="0.00156246461035015"
-        iyy="0.00733754343083901"
-        iyz="6.28110889329165E-09"
-        izz="0.00697869103915473" />
+      <origin xyz="0.183722 0.000103 -0.001665" rpy="0 0 0"/>
+      <mass value="1.653"/>
+      <inertia ixx="0.001706953" ixy="-0.000006995" ixz="0.001809254" iyy="0.014713776" iyz="0.000006223" izz="0.014239805"/>
     </inertial>
     <visual>
       <origin
@@ -177,58 +113,29 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link2.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_2.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/RM65/link2.STL" />
+        <mesh filename="package://rm_description/meshes/RM65/link2.STL"/>
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint2"
-    type="revolute">
-    <origin
-      xyz="0 0 0"
-      rpy="1.5708 -1.5708 0" />
-    <parent
-      link="Link1" />
-    <child
-      link="Link2" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      lower="-2.268"
-      upper="2.268"
-      effort="60"
-      velocity="3.14" />
-	<dynamics damping="50" friction="1"/>
+  <joint name="joint2" type="revolute">
+    <origin xyz="0 0 0" rpy="1.5708 -1.5708 0"/>
+    <parent link="Link1"/>
+    <child link="Link2"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.2689" upper="2.2689" effort="60" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
-  <link
-    name="Link3">
+  <link name="Link3">
     <inertial>
-      <origin
-        xyz="5.05312670989961E-06 -0.0595925663694732 0.010569069212336"
-        rpy="0 0 0" />
-      <mass
-        value="0.289633681624654" />
-      <inertia
-        ixx="0.00063737100450158"
-        ixy="-7.05261293649751E-08"
-        ixz="-3.86643272239426E-08"
-        iyy="0.00015648388095025"
-        iyz="-0.00014461035994916"
-        izz="0.000614178164773085" />
+      <origin xyz="0.000029 -0.090105 0.004039" rpy="0 0 0"/>
+      <mass value="0.726"/>
+      <inertia ixx="0.001350874" ixy="0.000001069" ixz="-0.000000228" iyy="0.000360021" iyz="-0.000219904" izz="0.001331598"/>
     </inertial>
     <visual>
       <origin
@@ -236,58 +143,29 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link3.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_3.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/RM65/link3.STL" />
+        <mesh filename="package://rm_description/meshes/RM65/link3.STL"/>
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint3"
-    type="revolute">
-    <origin
-      xyz="0.256 0 0"
-      rpy="0 0 1.5708" />
-    <parent
-      link="Link2" />
-    <child
-      link="Link3" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      lower="-2.355"
-      upper="2.355"
-      effort="30"
-      velocity="3.92" />
-	<dynamics damping="50" friction="1"/>
+  <joint name="joint3" type="revolute">
+    <origin xyz="0.256 0 0" rpy="0 0 1.5708"/>
+    <parent link="Link2"/>
+    <child link="Link3"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.356" upper="2.356" effort="30" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
-  <link
-    name="Link4">
+  <link name="Link4">
     <inertial>
-      <origin
-        xyz="1.15516617405898E-06 -0.0180424468598241 -0.0215394748352687"
-        rpy="0 0 0" />
-      <mass
-        value="0.239419768320061" />
-      <inertia
-        ixx="0.000285938919722783"
-        ixy="3.07101359163101E-09"
-        ixz="-2.21994118981953E-09"
-        iyy="0.000262727540304212"
-        iyz="4.4236583260078E-05"
-        izz="0.000119888082791859" />
+      <origin xyz="0.000007 -0.009486 -0.008041" rpy="0 0 0"/>
+      <mass value="0.671"/>
+      <inertia ixx="0.000690221" ixy="-0.000000865" ixz="-0.000000692" iyy="0.000552834" iyz="0.000016411" izz="0.000425835"/>
     </inertial>
     <visual>
       <origin
@@ -295,58 +173,29 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link4.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_4.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/RM65/link4.STL" />
+        <mesh filename="package://rm_description/meshes/RM65/link4.STL"/>
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint4"
-    type="revolute">
-    <origin
-      xyz="0 -0.21 0"
-      rpy="1.5708 0 0" />
-    <parent
-      link="Link3" />
-    <child
-      link="Link4" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      lower="-3.1"
-      upper="3.1"
-      effort="10"
-      velocity="3.92" />
-	<dynamics damping="50" friction="1"/>
+  <joint name="joint4" type="revolute">
+    <origin xyz="0 -0.21 0" rpy="1.5708 0 0"/>
+    <parent link="Link3"/>
+    <child link="Link4"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.106" upper="3.106" effort="10" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
-  <link
-    name="Link5">
+  <link name="Link5">
     <inertial>
-      <origin
-        xyz="3.19794786262152E-06 -0.0593808368101458 0.00736804250989326"
-        rpy="0 0 0" />
-      <mass
-        value="0.218799761431678" />
-      <inertia
-        ixx="0.000350540363914072"
-        ixy="-3.41781619975602E-08"
-        ixz="-1.77056457224373E-08"
-        iyy="0.000104927867487581"
-        iyz="-7.82431228461971E-05"
-        izz="0.000334482418423629" />
+      <origin xyz="0.000032 -0.083769 0.002326" rpy="0 0 0"/>
+      <mass value="0.647"/>
+      <inertia ixx="0.000834052" ixy="0.000000952" ixz="-0.000000257" iyy="0.000281767" iyz="-0.000111750" izz="0.000821714"/>
     </inertial>
     <visual>
       <origin
@@ -354,58 +203,29 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link5.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_5.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/RM65/link5.STL" />
+        <mesh filename="package://rm_description/meshes/RM65/link5.STL"/>
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint5"
-    type="revolute">
-    <origin
-      xyz="0 0 0"
-      rpy="-1.5708 0 0" />
-    <parent
-      link="Link4" />
-    <child
-      link="Link5" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      lower="-2.233"
-      upper="2.233"
-      effort="10"
-      velocity="3.92" />
-	<dynamics damping="50" friction="1"/>
+  <joint name="joint5" type="revolute">
+    <origin xyz="0 0 0" rpy="-1.5708 0 0"/>
+    <parent link="Link4"/>
+    <child link="Link5"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.234" upper="2.234" effort="10" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
-  <link
-    name="Link6">
+  <link name="Link6">
     <inertial>
-      <origin
-        xyz="0.000714234511756999 -0.000396718732824521 -0.0126723660946126"
-        rpy="0 0 0" />
-      <mass
-        value="0.0649018034311231" />
-      <inertia
-        ixx="2.02766547502765E-05"
-        ixy="-1.32505200276849E-06"
-        ixz="-2.5845091522508E-08"
-        iyy="1.87986725225022E-05"
-        iyz="3.39471452125439E-09"
-        izz="3.17885459163081E-05" />
+      <origin xyz="-0.000569 0.00029 -0.010569" rpy="0 0 0"/>
+      <mass value="0.104"/>
+      <inertia ixx="3.043E-05" ixy="2.622E-09" ixz="2.199E-08" iyy="3.604E-05" iyz="1.195E-08" izz="5.52E-05"/>
     </inertial>
     <visual>
       <origin
@@ -413,45 +233,25 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/RM65/link6.STL" />
+          filename="package://rm_description/meshes/dae/rm65/link_6_bi.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/RM65/link6.STL" />
+        <mesh filename="package://rm_description/meshes/RM65/link6.STL"/>
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint6"
-    type="revolute">
-    <origin
-      xyz="0 -0.144 0"
-      rpy="1.5708 0 0" />
-    <parent
-      link="Link5" />
-    <child
-      link="Link6" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      lower="-6.28"
-      upper="6.28"
-      effort="10"
-      velocity="3.92" />
-	<dynamics damping="50" friction="1"/>
+  <joint name="joint6" type="revolute">
+    <origin xyz="0 -0.144 0" rpy="1.5708 0 0"/>
+    <parent link="Link5"/>
+    <child link="Link6"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-6.28" upper="6.28" effort="10" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
-  
-  <!-- Transmissions for ROS Control -->
+  <!-- Transmissions for ROS Control-->
   <xacro:macro name="transmission_block" params="joint_name">
     <transmission name="tran1">
       <type>transmission_interface/SimpleTransmission</type>
@@ -464,15 +264,13 @@
       </actuator>
     </transmission>
   </xacro:macro>
-    
   <xacro:transmission_block joint_name="joint1"/>
   <xacro:transmission_block joint_name="joint2"/>
   <xacro:transmission_block joint_name="joint3"/>
   <xacro:transmission_block joint_name="joint4"/>
   <xacro:transmission_block joint_name="joint5"/>
   <xacro:transmission_block joint_name="joint6"/>
-
-  <!-- ros_control plugin -->
+  <!-- ros_control plugin-->
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
       <robotNamespace>/arm</robotNamespace>

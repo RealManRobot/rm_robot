@@ -10,6 +10,9 @@
   <arg name="publish_monitored_planning_scene" value="true" />
   <arg name="link6_type" value="$(arg link6_type)" />
  </include>
+ <!-- Gazebo exposes the trajectory action through /arm/arm_joint_controller. -->
+ <rosparam ns="move_group" command="load"
+           file="$(find rm_eco65_moveit_config)/config/controllers_gazebo.yaml" />
  # The visualization component of MoveIt!
  <include file="$(find rm_eco65_moveit_config)/launch/moveit_rviz.launch">
   <arg name="rviz_config" value="$(arg rviz_gazebo_config)" />

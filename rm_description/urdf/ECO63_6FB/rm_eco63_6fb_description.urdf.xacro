@@ -1,37 +1,33 @@
-<?xml version="1.0" encoding="utf-8"?>
-<robot  name="rm_eco63" xmlns:xacro="http://www.ros.org/wiki/xacro">
-<!-- arg link6_type -->
-<xacro:arg name="link6_type" default="Link6" />
-  <!-- arg->property -->
-<xacro:property name="link6_type" value="$(arg link6_type)" />
-<xacro:include filename="$(find rm_description)/urdf/ECO63/rm_eco63.transmission.xacro"/>
-<xacro:include filename="$(find rm_description)/urdf/ECO63/rm_eco63.gazebo.xacro"/>
-  <!-- Inertial matrix -->
-<xacro:macro name="inertial_matrix" params="mass">
-<inertial>
-    <mass value="${mass}" />
-    <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="0.5" iyz="0.0" izz="1.0" />
-</inertial>
-</xacro:macro>
- <xacro:macro name="Box_inertial_matrix" params="m l w h">
-       <inertial>
-               <mass value="${m}" />
-               <inertia ixx="${m*(h*h + l*l)/12}" ixy = "0" ixz = "0"
-                   iyy="${m*(w*w + l*l)/12}" iyz= "0"
-                   izz="${m*(w*w + h*h)/12}" />
-       </inertial>
+<?xml version='1.0' encoding='UTF-8'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rm_eco63">
+  <!-- arg link6_type-->
+  <xacro:arg name="link6_type" default="Link6"/>
+  <!-- arg->property-->
+  <xacro:property name="link6_type" value="$(arg link6_type)"/>
+  <xacro:include filename="$(find rm_description)/urdf/ECO63/rm_eco63.transmission.xacro"/>
+  <xacro:include filename="$(find rm_description)/urdf/ECO63/rm_eco63.gazebo.xacro"/>
+  <!-- Inertial matrix-->
+  <xacro:macro name="inertial_matrix" params="mass">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="0.5" iyz="0.0" izz="1.0"/>
+    </inertial>
   </xacro:macro>
-
-    <link name="dummy">
+  <xacro:macro name="Box_inertial_matrix" params="m l w h">
+    <inertial>
+      <mass value="${m}"/>
+      <inertia ixx="${m*(h*h + l*l)/12}" ixy="0" ixz="0" iyy="${m*(w*w + l*l)/12}" iyz="0" izz="${m*(w*w + h*h)/12}"/>
+    </inertial>
+  </xacro:macro>
+  <link name="dummy">
     </link>
-    <joint name="dummy_joint" type="fixed">
-      <parent link="dummy" />
-      <child link="base_link" />
-    </joint>
-  
-  <!-- ///////////////////////////////////////   bottom_joint   ////////////////////////////////////////// -->
+  <joint name="dummy_joint" type="fixed">
+    <parent link="dummy"/>
+    <child link="base_link"/>
+  </joint>
+  <!-- ///////////////////////////////////////   bottom_joint   //////////////////////////////////////////-->
   <joint name="bottom_joint" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0" />
+    <origin xyz="0 0 0" rpy="0 0 0"/>
     <parent link="base_link"/>
     <child link="bottom_link"/>
   </joint>
@@ -44,30 +40,40 @@
       <material name="Brown" />
     </visual>
     <collision>
-      <origin xyz=" 0 0 -0.02"  rpy="0 0 0"/>
+      <origin xyz="0 0 0.01" rpy="0 0 0"/>
       <geometry>
-        <box size="0.06 0.06 0.02" />
+        <box size="0.06 0.06 0.02"/>
       </geometry>
     </collision>
     <xacro:Box_inertial_matrix m="500" l="1" w="1" h="0.02"/>
   </link>
-
-
-  <link
-    name="base_link">
+  <link name="base_link">
     <inertial>
-      <origin
-        xyz="-0.0819699961303711 -0.0464753726622393 0.526722271495911"
-        rpy="0 0 0" />
-      <mass
-        value="8.97974481667473" />
-      <inertia
-        ixx="0.862297666639592"
-        ixy="-0.00170110773340804"
-        ixz="0.0134260863948258"
-        iyy="0.853404080505364"
-        iyz="-0.0335323790979435"
-        izz="0.021909948868005" />
+      <origin xyz="0.00020533 -8.2462E-05 0.042566" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="0.00082414" ixy="-2.9336E-06" ixz="2.8699E-05" iyy="0.0008206" iyz="-2.2123E-06" izz="0.00068569"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://rm_description/meshes/ECO63/base_link.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://rm_description/meshes/ECO63/base_link.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="Link1">
+    <inertial>
+      <origin xyz="-0.0122 -0.0001 -0.0346" rpy="0 0 0"/>
+      <mass value="1.6026"/>
+      <inertia ixx="0.0020078355" ixy="-0.000043739" ixz="-0.0006663696" iyy="0.0033806191" iyz="-0.0000114927" izz="0.0025157844"/>
     </inertial>
     <visual>
       <origin
@@ -75,161 +81,59 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/ECO63/base_link.STL" />
+          filename="package://rm_description/meshes/dae/eco63/link1_v1.0.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/ECO63/base_link.STL" />
+        <mesh filename="package://rm_description/meshes/ECO63/Link1.STL"/>
       </geometry>
     </collision>
   </link>
-  <link
-    name="Link1">
-    <inertial>
-      <origin
-        xyz="-0.0309493055609114 -0.0012728567226139 -0.00524336672353307"
-        rpy="0 0 0" />
-      <mass
-        value="0.656374618338142" />
-      <inertia
-        ixx="0.000538922068295209"
-        ixy="-6.49558484347273E-05"
-        ixz="0.000104084843141859"
-        iyy="0.00162201405585815"
-        iyz="6.13990176963193E-06"
-        izz="0.00151559483136641" />
-    </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://rm_description/meshes/ECO63/Link1.STL" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
-      </material>
-    </visual>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://rm_description/meshes/ECO63/Link1.STL" />
-      </geometry>
-    </collision>
-  </link>
-  <joint
-    name="joint1"
-    type="revolute">
-    <origin
-      xyz="0 0 0.1625"
-      rpy="0 0 0" />
-    <parent
-      link="base_link" />
-    <child
-      link="Link1" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      lower="-3.105"
-      upper="3.105"
-      effort="60"
-      velocity="3.14" />
-      <dynamics
-      damping="50"
-      friction="1" />
+  <joint name="joint1" type="revolute">
+    <origin xyz="0 0 0.1625" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="Link1"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.106" upper="3.106" effort="60" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
-  <link
-    name="Link2">
+  <link name="Link2">
     <inertial>
-      <origin
-        xyz="0.194682247033962 -1.86346038127949E-07 0.0708742731440949"
-        rpy="0 0 0" />
-      <mass
-        value="5.26262523683375" />
-      <inertia
-        ixx="0.00404170032131906"
-        ixy="-5.65174393111021E-07"
-        ixz="0.00121807022294723"
-        iyy="0.109727764384232"
-        iyz="-2.72124756899763E-09"
-        izz="0.110681578185881" />
+      <origin xyz="0.1236 -0.0001 -0.0551" rpy="0 0 0"/>
+      <mass value="2.8169"/>
+      <inertia ixx="0.0030513772" ixy="-0.0000024724" ixz="-0.0036915182" iyy="0.059635782" iyz="-0.0000047509" izz="0.059632877"/>
     </inertial>
     <visual>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0" />
+        rpy="3.141592653589793 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/ECO63/Link2.STL" />
+          filename="package://rm_description/meshes/dae/eco63/link2_v1.0.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.866666666666667 0.866666666666667 0.890196078431372 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/ECO63/Link2.STL" />
+        <mesh filename="package://rm_description/meshes/ECO63/Link2.STL"/>
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint2"
-    type="revolute">
-    <origin
-      xyz="-0.086 0 0"
-      rpy="1.5708 -1.5708 0" />
-    <parent
-      link="Link1" />
-    <child
-      link="Link2" />
-    <axis
-      xyz="0 0 -1" />
-    <limit
-      lower="-3.105"
-      upper="2.355"
-      effort="60"
-      velocity="3.14" />
-      <dynamics
-      damping="50"
-      friction="1" />
+  <joint name="joint2" type="revolute">
+    <origin xyz="-0.086 0 0" rpy="1.5708 -1.5708 3.1416"/>
+    <parent link="Link1"/>
+    <child link="Link2"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.106" upper="2.356" effort="60" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
-  <link
-    name="Link3">
+  <link name="Link3">
     <inertial>
-      <origin
-        xyz="0.179310475039839 1.86928912626616E-09 0.0308638630867258"
-        rpy="0 0 0" />
-      <mass
-        value="1.3509329667983" />
-      <inertia
-        ixx="0.000796925531981305"
-        ixy="-2.89740446981148E-08"
-        ixz="-0.000607432295339128"
-        iyy="0.0219803140031169"
-        iyz="1.84171394643915E-08"
-        izz="0.022157190260175" />
+      <origin xyz="0.1603 -0.0001 0.0054" rpy="0 0 0"/>
+      <mass value="2.6857"/>
+      <inertia ixx="0.0029686196" ixy="-0.0000071564" ixz="-0.003498838" iyy="0.0669637576" iyz="-0.0000078642" izz="0.066058064"/>
     </inertial>
     <visual>
       <origin
@@ -237,60 +141,29 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/ECO63/Link3.STL" />
+          filename="package://rm_description/meshes/dae/eco63/link3_v1.0.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/ECO63/Link3.STL" />
+        <mesh filename="package://rm_description/meshes/ECO63/Link3.STL"/>
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint3"
-    type="revolute">
-    <origin
-      xyz="0.41 0 0"
-      rpy="3.1416 -0.0087266 0" />
-    <parent
-      link="Link2" />
-    <child
-      link="Link3" />
-    <axis
-      xyz="-0.0087265 0 0.99996" />
-    <limit
-      lower="-2.93"
-      upper="2.756"
-      effort="30"
-      velocity="3.14" />
-      <dynamics
-      damping="50"
-      friction="1" />
+  <joint name="joint3" type="revolute">
+    <origin xyz="0.41 0 0" rpy="0 0 0"/>
+    <parent link="Link2"/>
+    <child link="Link3"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.932" upper="2.7576" effort="30" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
-  <link
-    name="Link4">
+  <link name="Link4">
     <inertial>
-      <origin
-        xyz="1.18737948139047E-06 -0.00995387687025817 0.0129236518197595"
-        rpy="0 0 0" />
-      <mass
-        value="0.733001235394853" />
-      <inertia
-        ixx="0.000641256799113762"
-        ixy="7.16323347889126E-09"
-        ixz="-6.76890724051393E-09"
-        iyy="0.000512473473605366"
-        iyz="-0.000109077537111131"
-        izz="0.000460316607732565" />
+      <origin xyz="0 -0.0359 0.0037" rpy="0 0 0"/>
+      <mass value="0.625"/>
+      <inertia ixx="0.0005456336" ixy="-0.000000119" ixz="-0.0000001203" iyy="0.0003173345" iyz="-0.0000813961" izz="0.0005169693"/>
     </inertial>
     <visual>
       <origin
@@ -298,60 +171,29 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/ECO63/Link4.STL" />
+          filename="package://rm_description/meshes/dae/eco63/link4_v1.0.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.866666666666667 0.866666666666667 0.890196078431372 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/ECO63/Link4.STL" />
+        <mesh filename="package://rm_description/meshes/ECO63/Link4.STL"/>
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint4"
-    type="revolute">
-    <origin
-      xyz="0.38049 0 -0.054981"
-      rpy="-0.0087266 0 1.5708" />
-    <parent
-      link="Link3" />
-    <child
-      link="Link4" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      lower="-3.105"
-      upper="3.105"
-      effort="10"
-      velocity="3.14" />
-      <dynamics
-      damping="50"
-      friction="1" />
+  <joint name="joint4" type="revolute">
+    <origin xyz="0.38 0 -0.058899" rpy="0 0 1.5708"/>
+    <parent link="Link3"/>
+    <child link="Link4"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.106" upper="3.106" effort="10" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
-  <link
-    name="Link5">
+  <link name="Link5">
     <inertial>
-      <origin
-        xyz="1.10373835336686E-06 0.00366306859871773 -0.0136222948606266"
-        rpy="0 0 0" />
-      <mass
-        value="0.911747774463918" />
-      <inertia
-        ixx="0.000797250089831515"
-        ixy="-3.0783066224908E-08"
-        ixz="-1.86945083800088E-09"
-        iyy="0.000572176795709541"
-        iyz="-0.000145598908387624"
-        izz="0.000625883738000052" />
+      <origin xyz="0 0.0246 -0.0066" rpy="0 0 0"/>
+      <mass value="0.6743"/>
+      <inertia ixx="0.0006850659" ixy="-0.0000005787" ixz="-0.0000000103" iyy="0.0003873373" iyz="-0.0001135208" izz="0.0006178918"/>
     </inertial>
     <visual>
       <origin
@@ -359,61 +201,30 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rm_description/meshes/ECO63/Link5.STL" />
+          filename="package://rm_description/meshes/dae/eco63/link5_v1.0.dae" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.866666666666667 0.866666666666667 0.890196078431372 1" />
-      </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://rm_description/meshes/ECO63/Link5.STL" />
+        <mesh filename="package://rm_description/meshes/ECO63/Link5.STL"/>
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint5"
-    type="revolute">
-    <origin
-      xyz="0 -0.11 -0.0006"
-      rpy="1.5708 0 0" />
-    <parent
-      link="Link4" />
-    <child
-      link="Link5" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      lower="-3.105"
-      upper="3.105"
-      effort="10"
-      velocity="3.14" />
-      <dynamics
-      damping="50"
-      friction="1" />
+  <joint name="joint5" type="revolute">
+    <origin xyz="0 -0.11 0" rpy="1.5708 0 0"/>
+    <parent link="Link4"/>
+    <child link="Link5"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.106" upper="3.106" effort="10" velocity="3.14"/>
+    <dynamics damping="50" friction="1"/>
   </joint>
   <xacro:if value="${ link6_type =='Link6' }">
-    <link
-      name="Link6">
+    <link name="Link6">
       <inertial>
-        <origin
-          xyz="0.000922882083248047 -9.40199566012989E-05 -0.0127047090822767"
-          rpy="0 0 0" />
-        <mass
-          value="0.065035417997418" />
-        <inertia
-          ixx="2.11425102567822E-05"
-          ixy="-2.28752901090794E-08"
-          ixz="-2.56006744332993E-08"
-          iyy="1.81097258369991E-05"
-          iyz="-1.0175060606431E-08"
-          izz="3.19000225583591E-05" />
+        <origin xyz="0.001 0 -0.0101" rpy="0 0 0"/>
+        <mass value="0.107"/>
+        <inertia ixx="0.0000441232" ixy="-0.0000000636" ixz="-0.0000002997" iyy="0.0000350778" iyz="-0.0000000289" izz="0.0000654409"/>
       </inertial>
       <visual>
         <origin
@@ -421,63 +232,31 @@
           rpy="0 0 0" />
         <geometry>
           <mesh
-            filename="package://rm_description/meshes/ECO63/Link6.STL" />
+            filename="package://rm_description/meshes/dae/eco63/link6_v1.0.dae" />
         </geometry>
-        <material
-          name="">
-          <color
-            rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
-        </material>
       </visual>
       <collision>
-        <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
+        <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh
-            filename="package://rm_description/meshes/ECO63/Link6.STL" />
+          <mesh filename="package://rm_description/meshes/ECO63/Link6.STL"/>
         </geometry>
       </collision>
     </link>
-    <joint
-      name="joint6"
-      type="revolute">
-      <origin
-        xyz="-0.00010641 0.0797 -0.00010731"
-        rpy="-1.5708 0 0" />
-      <parent
-        link="Link5" />
-      <child
-        link="Link6" />
-      <axis
-        xyz="0 0 1" />
-      <limit
-        lower="-6.28"
-        upper="6.28"
-        effort="10"
-        velocity="3.14" />
-        <dynamics
-        damping="50"
-        friction="1" />
+    <joint name="joint6" type="revolute">
+      <origin xyz="0 0.0795 0" rpy="-1.5708 0 0"/>
+      <parent link="Link5"/>
+      <child link="Link6"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-6.28" upper="6.28" effort="10" velocity="3.14"/>
+      <dynamics damping="50" friction="1"/>
     </joint>
   </xacro:if>
-
   <xacro:if value="${ link6_type =='Link6_6fb' }">
-    <link
-    name="Link6">
-    <inertial>
-      <origin
-        xyz="0.000502798417250983 1.40039216558474E-05 -0.0166588848846901"
-        rpy="0 0 0" />
-      <mass
-        value="0.151764173288042" />
-      <inertia
-        ixx="5.92991887697562E-05"
-        ixy="-3.55096210035366E-08"
-        ixz="9.38773298614362E-07"
-        iyy="6.14480379976492E-05"
-        iyz="-2.92670703712805E-08"
-        izz="7.77928386927577E-05" />
+    <link name="Link6">
+      <inertial>
+        <origin xyz="0.001 0 -0.0101" rpy="0 0 0"/>
+        <mass value="0.248"/>
+        <inertia ixx="0.0000441232" ixy="-0.0000000636" ixz="-0.0000002997" iyy="0.0000350778" iyz="-0.0000000289" izz="0.0000654409"/>
       </inertial>
       <visual>
         <origin
@@ -485,44 +264,25 @@
           rpy="0 0 0" />
         <geometry>
           <mesh
-            filename="package://rm_description/meshes/ECO63/Link6_6fb.STL" />
+            filename="package://rm_description/meshes/dae/eco63/link6Fb_v1.0.dae" />
         </geometry>
-        <material
-          name="">
-          <color
-            rgba="0.866666666666667 0.866666666666667 0.890196078431372 1" />
-        </material>
       </visual>
       <collision>
-        <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
+        <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh
-            filename="package://rm_description/meshes/ECO63/Link6_6fb.STL" />
+          <mesh filename="package://rm_description/meshes/ECO63/Link6_6fb.STL"/>
         </geometry>
       </collision>
     </link>
-    <joint
-      name="joint6"
-      type="revolute">
-      <origin
-        xyz="0 0.0967 0"
-        rpy="-1.5708 0 0" />
-      <parent
-        link="Link5" />
-      <child
-        link="Link6" />
-      <axis
-        xyz="0 0 1" />
-      <limit
-        lower="-6.28"
-        upper="6.28"
-        effort="10"
-        velocity="3.14" />
+    <joint name="joint6" type="revolute">
+      <origin xyz="0 0.0965 0" rpy="-1.5708 0 0"/>
+      <parent link="Link5"/>
+      <child link="Link6"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-6.28" upper="6.28" effort="10" velocity="3.14"/>
     </joint>
   </xacro:if>
-    <!-- Transmissions for ROS Control -->
+  <!-- Transmissions for ROS Control-->
   <xacro:macro name="transmission_block" params="joint_name">
     <transmission name="tran1">
       <type>transmission_interface/SimpleTransmission</type>
@@ -535,15 +295,13 @@
       </actuator>
     </transmission>
   </xacro:macro>
-    
   <xacro:transmission_block joint_name="joint1"/>
   <xacro:transmission_block joint_name="joint2"/>
   <xacro:transmission_block joint_name="joint3"/>
   <xacro:transmission_block joint_name="joint4"/>
   <xacro:transmission_block joint_name="joint5"/>
   <xacro:transmission_block joint_name="joint6"/>
-
-  <!-- ros_control plugin -->
+  <!-- ros_control plugin-->
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
       <robotNamespace>/arm</robotNamespace>

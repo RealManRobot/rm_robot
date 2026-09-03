@@ -14,6 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf2
+  tf2_geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -200,6 +202,8 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 add_executable(rm_driver src/rm_driver.cpp src/cJSON.c)
+add_dependencies(rm_driver ${catkin_EXPORTED_TARGETS})
 target_link_libraries(rm_driver ${catkin_LIBRARIES})
+
 #add_dependencies(rm_driver rm_driver_generate_messages_cpp)
 #add_definitions(-std=c99) 
