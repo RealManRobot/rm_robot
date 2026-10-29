@@ -1861,7 +1861,7 @@ int Movej_Cmd(float *joint, byte v, uint8_t trajectory_connect)
     cJSON_AddStringToObject(root, "command", "movej");
     cJSON_AddItemToObject(root, "joint", array);
     cJSON_AddNumberToObject(root, "v", v);
-    cJSON_AddNumberToObject(root, "r", (int)(r * 1000));
+    cJSON_AddNumberToObject(root, "r", r);
     cJSON_AddNumberToObject(root, "trajectory_connect", trajectory_connect);
 
     data = cJSON_Print(root);
@@ -1905,7 +1905,7 @@ int Movel_Cmd(POSE pose, byte v, u_int8_t trajectory_connect)
     cJSON_AddStringToObject(root, "command", "movel");
     cJSON_AddItemToObject(root, "pose", array);
     cJSON_AddNumberToObject(root, "v", v);
-    cJSON_AddNumberToObject(root, "r", (int)(r * 1000));
+    cJSON_AddNumberToObject(root, "r", r);
     cJSON_AddNumberToObject(root, "trajectory_connect", trajectory_connect);
 
     data = cJSON_Print(root);
@@ -2163,7 +2163,7 @@ int Movej_p_Cmd(POSE pose, byte v, uint8_t trajectory_connect)
     cJSON_AddStringToObject(root, "command", "movej_p");
     cJSON_AddItemToObject(root, "pose", array);
     cJSON_AddNumberToObject(root, "v", v);
-    cJSON_AddNumberToObject(root, "r", (int)(r * 1000));
+    cJSON_AddNumberToObject(root, "r", r);
     cJSON_AddNumberToObject(root, "trajectory_connect", trajectory_connect);
 
     data = cJSON_Print(root);
