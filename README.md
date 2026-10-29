@@ -4,8 +4,7 @@
 * This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
 
 This V2.6.0-based update integrates driver fixes, explicit hand DOF messages
-and updated model resources. See [integration and migration notes](rm_doc/ROS1_INTEGRATION.md)
-for changed message contracts, rebuild commands and model sources.
+and updated model resources.
 
 ### Easy environment setup 
 ---

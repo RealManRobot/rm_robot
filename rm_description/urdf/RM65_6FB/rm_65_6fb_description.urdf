@@ -10,13 +10,10 @@
       <inertia ixx="0.0017232" ixy="-3.1058E-06" ixz="3.7924E-05" iyy="0.0017051" iyz="-1.3691E-06" izz="0.00090158"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://rm_description/meshes/RM65/base_link.STL"/>
+        <mesh filename="package://rm_description/meshes/dae/rm65/base_link.dae"/>
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1"/>
-      </material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -32,13 +29,10 @@
       <inertia ixx="0.002662223" ixy="-0.000026849" ixz="-0.000013775" iyy="0.002331685" iyz="-0.000078667" izz="0.001663712"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://rm_description/meshes/RM65/link1.STL"/>
+        <mesh filename="package://rm_description/meshes/dae/rm65/link_1.dae"/>
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1"/>
-      </material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -61,13 +55,10 @@
       <inertia ixx="0.001706953" ixy="-0.000006995" ixz="0.001809254" iyy="0.014713776" iyz="0.000006223" izz="0.014239805"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://rm_description/meshes/RM65/link2.STL"/>
+        <mesh filename="package://rm_description/meshes/dae/rm65/link_2.dae"/>
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1"/>
-      </material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -77,7 +68,7 @@
     </collision>
   </link>
   <joint name="joint2" type="revolute">
-    <origin xyz="0 0 0" rpy="1.5708 -1.5708 0"/>
+    <origin rpy="-1.57079265345464 -1.57079265358979 3.14159265345464" xyz="0 0 0"/>
     <parent link="Link1"/>
     <child link="Link2"/>
     <axis xyz="0 0 1"/>
@@ -90,13 +81,10 @@
       <inertia ixx="0.001350874" ixy="0.000001069" ixz="-0.000000228" iyy="0.000360021" iyz="-0.000219904" izz="0.001331598"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://rm_description/meshes/RM65/link3.STL"/>
+        <mesh filename="package://rm_description/meshes/dae/rm65/link_3.dae"/>
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1"/>
-      </material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -119,13 +107,10 @@
       <inertia ixx="0.000690221" ixy="-0.000000865" ixz="-0.000000692" iyy="0.000552834" iyz="0.000016411" izz="0.000425835"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://rm_description/meshes/RM65/link4.STL"/>
+        <mesh filename="package://rm_description/meshes/dae/rm65/link_4.dae"/>
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1"/>
-      </material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -148,13 +133,10 @@
       <inertia ixx="0.000834052" ixy="0.000000952" ixz="-0.000000257" iyy="0.000281767" iyz="-0.000111750" izz="0.000821714"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://rm_description/meshes/RM65/link5.STL"/>
+        <mesh filename="package://rm_description/meshes/dae/rm65/link_5.dae"/>
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1"/>
-      </material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -177,13 +159,10 @@
       <inertia ixx="3.043E-05" ixy="2.622E-09" ixz="2.199E-08" iyy="3.604E-05" iyz="1.195E-08" izz="5.52E-05"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://rm_description/meshes/RM65/Link6_6fb.STL"/>
+        <mesh filename="package://rm_description/meshes/dae/rm65/link_6_fb.dae"/>
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1"/>
-      </material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
