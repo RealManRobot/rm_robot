@@ -1386,7 +1386,7 @@ int SetHandFollowAngle(int16_t *hand_angle, int num_dof)
     char buffer[512];
     int res;
 
-    if (hand_angle == NULL || (num_dof != 1 && num_dof != 6))
+    if (hand_angle == NULL || num_dof < 1 || num_dof > 6)
     {
         return -1;
     }
@@ -1447,7 +1447,7 @@ int SetHandFollowPos(int16_t *hand_angle, int num_dof)
     char buffer[512];
     int res;
 
-    if (hand_angle == NULL || (num_dof != 1 && num_dof != 6))
+    if (hand_angle == NULL || num_dof < 1 || num_dof > 6)
     {
         return -1;
     }

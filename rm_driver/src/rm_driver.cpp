@@ -107,9 +107,9 @@ void HandFollowPos_Callback(const rm_msgs::Hand_Pos& msg)
     }
 
     int num_dof = msg.num_dof;
-    if (num_dof != 1 && num_dof != 6)
+    if (num_dof < 1 || num_dof > 6)
     {
-        ROS_ERROR("Unsupported DOF count: %d, only 1 or 6 supported!\n", num_dof);
+        ROS_ERROR("Invalid DOF count: %d, hand_angle contains at most 6 values!\n", num_dof);
         return;
     }
     res = SetHandFollowPos(hand_angle, num_dof);
@@ -132,9 +132,9 @@ void HandFollowAngle_Callback(const rm_msgs::Hand_Angle& msg)
     }
 
     int num_dof = msg.num_dof;
-    if (num_dof != 1 && num_dof != 6)
+    if (num_dof < 1 || num_dof > 6)
     {
-        ROS_ERROR("Unsupported DOF count: %d, only 1 or 6 supported!\n", num_dof);
+        ROS_ERROR("Invalid DOF count: %d, hand_angle contains at most 6 values!\n", num_dof);
         return;
     }
     res = SetHandFollowAngle(hand_angle, num_dof);
@@ -168,7 +168,7 @@ void SetHandAngle_Callback(const rm_msgs::Hand_Angle msg)
 {
     if (msg.num_dof != 0 && msg.num_dof != 6)
     {
-        ROS_ERROR("Set_Hand_Angle supports six DOF; use Hand_FollowAngle for one DOF");
+        ROS_ERROR("Set_Hand_Angle supports six DOF; use Hand_FollowAngle for other DOF counts");
         return;
     }
     int res = 0;
