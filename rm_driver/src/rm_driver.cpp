@@ -8,6 +8,22 @@ ros::CallbackQueue queue_forcePositionMove;
 
 bool joint_flag = false;
 
+static bool ValidateBlendRadius(const char *command, int r, uint8_t trajectory_connect)
+{
+    if (r < 0 || r > 100)
+    {
+        ROS_ERROR("%s blend radius r must be in range [0, 100], current value: %d", command, r);
+        return false;
+    }
+
+    if (r > 0 && trajectory_connect == 0)
+    {
+        ROS_WARN("%s blend radius r=%d is ignored when trajectory_connect is 0", command, r);
+    }
+
+    return true;
+}
+
 
 void SetToolVoltage_Callback(const std_msgs::Byte msg)
 {
@@ -79,7 +95,7 @@ void SetHandSpeed_Callback(const rm_msgs::Hand_Speed msg)
     }
 }
 
-void HandFollowPos_Callback(const rm_msgs::Hand_Angle msg)
+void HandFollowPos_Callback(const rm_msgs::Hand_Pos& msg)
 {
     int res = 0;
     int i = 0;
@@ -90,15 +106,21 @@ void HandFollowPos_Callback(const rm_msgs::Hand_Angle msg)
         hand_angle[i] = msg.hand_angle[i];
     }
 
-    res = SetHandFollowPos(hand_angle);
+    int num_dof = msg.num_dof;
+    if (num_dof < 1 || num_dof > 6)
+    {
+        ROS_ERROR("Invalid DOF count: %d, hand_angle contains at most 6 values!\n", num_dof);
+        return;
+    }
+    res = SetHandFollowPos(hand_angle, num_dof);
 
     if (res != 0)
     {
-        ROS_ERROR("SetHandAngle failed!\n");
+        ROS_ERROR("SetHandFollowPos failed!\n");
     }
 }
 
-void HandFollowAngle_Callback(const rm_msgs::Hand_Angle msg)
+void HandFollowAngle_Callback(const rm_msgs::Hand_Angle& msg)
 {
     int res = 0;
     int i = 0;
@@ -109,11 +131,17 @@ void HandFollowAngle_Callback(const rm_msgs::Hand_Angle msg)
         hand_angle[i] = msg.hand_angle[i];
     }
 
-    res = SetHandFollowAngle(hand_angle);
+    int num_dof = msg.num_dof;
+    if (num_dof < 1 || num_dof > 6)
+    {
+        ROS_ERROR("Invalid DOF count: %d, hand_angle contains at most 6 values!\n", num_dof);
+        return;
+    }
+    res = SetHandFollowAngle(hand_angle, num_dof);
 
     if (res != 0)
     {
-        ROS_ERROR("SetHandAngle failed!\n");
+        ROS_ERROR("SetHandFollowAngle failed!\n");
     }
 }
 
@@ -138,6 +166,11 @@ void SetHandForce_Callback(const rm_msgs::Hand_Force msg)
 //订阅对设置灵巧手角度的主题接收到数据后的处理函数
 void SetHandAngle_Callback(const rm_msgs::Hand_Angle msg)
 {
+    if (msg.num_dof != 0 && msg.num_dof != 6)
+    {
+        ROS_ERROR("Set_Hand_Angle supports six DOF; use Hand_FollowAngle for other DOF counts");
+        return;
+    }
     int res = 0;
     int i = 0;
     int16_t hand_angle[6];
@@ -1400,6 +1433,11 @@ void Movel_Offset_Callback(const rm_msgs::Moveloffset msg)
 {
     ROS_INFO("Movel_Offset_Callback!\n");
     int res = 0;
+    if (!ValidateBlendRadius("Movel_Offset", msg.r, msg.trajectory_connect))
+    {
+        return;
+    }
+
     res = Movel_Offset(msg.offset, msg.speed, msg.r, msg.trajectory_connect, msg.frame_type, msg.block);
     if(res == 0){
         // ROS_INFO("Movel_Offset success!\n");
@@ -2254,13 +2292,13 @@ void timer_callback(const ros::TimerEvent)
 
 struct sockaddr_in clientAddr;
 socklen_t clientAddrLen = sizeof(clientAddr);
-char udp_socket_buffer[1800];
+char udp_socket_buffer[65536];
 
 bool read_data()
 {
     memset(udp_socket_buffer, 0, sizeof(udp_socket_buffer));
 
-    ssize_t numBytes = recvfrom(Udp_Sockfd, udp_socket_buffer, sizeof(udp_socket_buffer), 0,
+    ssize_t numBytes = recvfrom(Udp_Sockfd, udp_socket_buffer, sizeof(udp_socket_buffer) - 1, 0,
         (struct sockaddr*) & clientAddr, &clientAddrLen);
     if ((numBytes < 0)||(tcp_arm_joint_state == false)) {
         // std::cerr << "Error in recvfrom" << std::endl;
@@ -2269,6 +2307,7 @@ bool read_data()
         close(Udp_Sockfd);
         return false;
     }
+    if (numBytes < 2) return false;
     // 将接收到的数据输出到控制台
     udp_socket_buffer[numBytes] = '\0'; // 添加字符串结束符
             // std::cout << "Received from "                                         //<< inet_ntoa(clientAddr.sin_addr)
@@ -2290,7 +2329,12 @@ void udp_timer_callback(const ros::TimerEvent)
 {
     if(read_data()==true)
     {
-        if(Parser_Udp_Msg(udp_socket_buffer)==0);
+        const int parser_result = Parser_Udp_Msg(udp_socket_buffer);
+        if (parser_result == 0) udp_failed_time = 0;
+        if (parser_result != 0)
+        {
+            ROS_WARN_THROTTLE(5.0, "Failed to parse UDP realtime data, error: %d", parser_result);
+        }
     }
     else
     {
@@ -2403,9 +2447,10 @@ int main(int argc, char **argv)
 
     memset(temp, 0, sizeof(temp));
 
-    char socket_buffer[500];
+    char socket_buffer[8192];
     memset(socket_buffer, 0, sizeof(socket_buffer));
     int buffer_cnt = 0;
+    bool discard_tcp_frame = false;
 
     // msg
     rm_msgs::Arm_IO_State Arm_IO;
@@ -2965,24 +3010,39 @@ int main(int argc, char **argv)
             FD_SET(Arm_Socket, &fds);
             nRet = select(Arm_Socket+1, &fds, NULL, NULL, &time_out);
             // ROS_INFO("nRet data is:  %d", nRet);
-            if (nRet == 0)
+            if (nRet <= 0)
             { 
                 break;
             }
-            recv(Arm_Socket, temp, 1, 0);
+            const ssize_t recv_size = recv(Arm_Socket, temp, 1, 0);
+            if (recv_size <= 0)
+            {
+                tcp_arm_joint_state = false;
+                buffer_cnt = 0;
+                discard_tcp_frame = false;
+                memset(socket_buffer, 0, sizeof(socket_buffer));
+                break;
+            }
+            if (discard_tcp_frame)
+            {
+                if (temp[0] == 0x0A) discard_tcp_frame = false;
+                continue;
+            }
+            if (buffer_cnt >= static_cast<int>(sizeof(socket_buffer) - 1))
+            {
+                ROS_ERROR("TCP JSON response exceeds receive buffer; discarding frame");
+                discard_tcp_frame = temp[0] != 0x0A;
+                buffer_cnt = 0;
+                memset(socket_buffer, 0, sizeof(socket_buffer));
+                continue;
+            }
             socket_buffer[buffer_cnt] = (char)temp[0];
             buffer_cnt++;
+            socket_buffer[buffer_cnt] = '\0';
 
             if ((temp[0] == 0x0A) && (buffer_cnt > 1))
             {
                 // ROS_INFO("recv data is:  %s", socket_buffer);
-                if(buffer_cnt>500)
-                {
-                    // ROS_INFO("buffer_cnt data is:  %d", buffer_cnt);
-                    tcp_arm_joint_state = false;
-                    buffer_cnt = 0;
-                    break;
-                }
                 msg = (byte)socket_buffer[buffer_cnt - 2];
 
                 if (msg == 0x0D)
@@ -3068,15 +3128,19 @@ int main(int argc, char **argv)
                     case SET_RM_PLUS_MODE:
                         state.data = RM_Joint.state;
                         pub_setRmPlusModeResult.publish(state);
+                        break;
                     case GET_RM_PLUS_MODE:
                         plus_mode_result.data = RM_Joint.mode_result;
                         pub_getRmPlusModeResult.publish(plus_mode_result);
+                        break;
                     case SET_RM_PLUS_TOUCH:
                         state.data = RM_Joint.state;
                         pub_setRmPlusTouchResult.publish(state);
+                        break;
                     case GET_RM_PLUS_TOUCH:
                         plus_touch_result.data = RM_Joint.mode_result;
                         pub_getRmPlusTouchResult.publish(plus_touch_result);
+                        break;
                     case ARM_JOINT_ERR:
                         Info_Joint_Err();
                         break;
@@ -3438,6 +3502,7 @@ int main(int argc, char **argv)
                     case HAND_FOLLOW_POS:
                         state.data = RM_Joint.state;
                         pub_setHandFollowPosResult.publish(state);
+                        break;
                     case SET_ARM_POWER:
                         state.data = RM_Joint.state;
                         pub_setArmPowerResult.publish(state);
@@ -3600,13 +3665,6 @@ int main(int argc, char **argv)
                     break;
                 }
             }
-            else if (buffer_cnt > 500)
-            {
-                buffer_cnt = 0;
-                memset(socket_buffer, 0, sizeof(socket_buffer));
-                break;
-            }
-            
         }
 
     /*
@@ -3614,6 +3672,9 @@ int main(int argc, char **argv)
     */
     if((connect_status==0) && (last_connect_status==1))
     { 
+        buffer_cnt = 0;
+        discard_tcp_frame = false;
+        memset(socket_buffer, 0, sizeof(socket_buffer));
         ROS_INFO("RM_Robot driver lines stop!!!\n");
         spinner.stop();
         spinner_others.stop();

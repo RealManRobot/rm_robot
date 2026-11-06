@@ -1,7 +1,10 @@
 # RealMan Robot
 
-* Version V2.6.0
+* Base version V2.6.0; integrated changes are unreleased.
 * This repository provides ROS support for [RealMan robots](http://www.realman-robotics.com/). This repository holds source code for `melodic、noetic`. 
+
+This V2.6.0-based update integrates driver fixes, explicit hand DOF messages
+and updated model resources.
 
 ### Easy environment setup 
 ---
@@ -39,7 +42,7 @@ source ~/catkin_workspace/devel/setup.bash
 You can use MoveIt! to control the simulated robot like ***RVIZ*** ,***Gazebo*** or ***VREP*** environment.
 
 **Use MoveIt in RVIZ to control the simulated robot in Gazebo:**
-* ***CAUTION:*** Before running, you need to modify rm_<arm_type>_moveit_config/launch/rm_<arm_type>_moveit_controller_manager.launch.xml and load controllers_gazebo.yaml.like this 
+* The Gazebo bringup launches load `controllers_gazebo.yaml` automatically.
 ![image](rm_doc/image/gazebo_change.png)
 ```  
 roslaunch rm_gazebo arm_<arm_type>_bringup_moveit.launch
@@ -57,7 +60,7 @@ roslaunch rm_gazebo arm_<arm_type>_bringup_moveit.launch
 +  When you control the RealMan robot, make certain that no one is within the robot workspace and the e-stop is under operator control.
 ```
 **CAUTION:**
-* Before running, you need to modify rm_<arm_type>_moveit_config/launch/rm_<arm_type>_moveit_controller_manager.launch.xml and load controllers.yaml.
+* The real-robot launches use `controllers.yaml`.
 * Start the RM robot and ensure that the upper computer and the robot are on the same LAN.
 
 **Use a new terminal for each command.**

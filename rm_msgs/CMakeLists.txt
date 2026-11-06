@@ -103,6 +103,7 @@ Hand_Seq.msg
 Hand_Speed.msg
 Hand_Force.msg
 Hand_Angle.msg
+Hand_Pos.msg
 Hand_Status.msg
 LiftState.msg
 Servo_GetAngle.msg
@@ -203,7 +204,7 @@ ExpandState.msg
 catkin_package(
   INCLUDE_DIRS include
   #LIBRARIES rm_msgs
-  CATKIN_DEPENDS geometry_msgs rospy std_msgs roscpp
+  CATKIN_DEPENDS geometry_msgs rospy std_msgs roscpp message_runtime
   # DEPENDS system_lib 
 )
 

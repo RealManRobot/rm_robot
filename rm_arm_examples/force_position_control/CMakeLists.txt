@@ -25,5 +25,6 @@ include
 )
 
 add_executable(api_Force_Position_Control_demo src/api_force_position_control_demo.cpp)
+add_dependencies(api_Force_Position_Control_demo ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(api_Force_Position_Control_demo ${catkin_LIBRARIES} ${Boost_LIBRARIES})
